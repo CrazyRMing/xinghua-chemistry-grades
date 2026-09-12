@@ -109,6 +109,7 @@ th:first-child, td:first-child { width: 7rem; text-align: center; }
 .score-pill--published { background: var(--success-soft); color: var(--success); }
 .score-pill--pending { background: var(--warning-soft); color: var(--warning); }
 .score-pill--missing { background: #eef1f1; color: var(--missing); }
+.score-time { display: block; margin-top: .25rem; color: var(--muted); font-size: .76rem; line-height: 1.35; white-space: nowrap; }
 .table-note { margin: .8rem 0 0; color: var(--muted); font-size: .9rem; }
 
 .issue-panel { border-color: #f0cf88; background: #fffaf0; }

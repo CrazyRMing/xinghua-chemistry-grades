@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260912-1";
+const DATA_URL = "data/grades.enc.json?v=20260912-4";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 
 const el = {
@@ -93,7 +93,7 @@ function getCounts(className, episodeId) {
   const counts = { published: 0, pending: 0, missing: 0 };
   for (const student of data.students) {
     if (student.class !== className) continue;
-    const status = student.scores?.[episodeId]?.status ?? "no_response";
+    const status = getEntryStatus(student.scores?.[episodeId]);
     if (status === "published") counts.published += 1;
     else if (status === "pending_review") counts.pending += 1;
     else counts.missing += 1;
@@ -142,18 +142,64 @@ function renderScoreHead() {
   const row = document.createElement("tr");
   appendText(row, "th", "座號");
   appendText(row, "th", "姓名");
-  for (const episode of data.episodes) appendText(row, "th", `${episode.label}（100 分）`);
+  for (const episode of data.episodes) appendText(row, "th", `${episode.label}（最高分／送出時間）`);
   el.scoreHead.replaceChildren(row);
+}
+
+function parseScore(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? score : null;
+}
+
+function getAttemptTime(attempt) {
+  return attempt?.submitted_at ?? attempt?.submittedAt ?? attempt?.time ?? null;
+}
+
+function parseAttemptTimestamp(value) {
+  const match = String(value ?? "").match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)/u);
+  if (!match) return null;
+  let hour = Number(match[4]);
+  if (match[7] === "下午" && hour < 12) hour += 12;
+  if (match[7] === "上午" && hour === 12) hour = 0;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, Number(match[5]), Number(match[6]));
+}
+
+function getPublishedResult(entry) {
+  const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
+  let selected = null;
+  for (const attempt of attempts) {
+    const score = parseScore(attempt?.score ?? attempt?.value);
+    const submittedAt = getAttemptTime(attempt);
+    const submittedAtValue = parseAttemptTimestamp(submittedAt);
+    if (score === null) continue;
+    if (!selected || score > selected.score || (score === selected.score && submittedAtValue !== null && submittedAtValue > selected.submittedAtValue)) {
+      selected = { score, submittedAt, submittedAtValue };
+    }
+  }
+  if (selected) return selected;
+
+  const score = parseScore(entry?.value);
+  return score === null ? null : { score, submittedAt: getAttemptTime(entry) };
+}
+
+function getEntryStatus(entry) {
+  return getPublishedResult(entry) ? "published" : entry?.status ?? "no_response";
 }
 
 function scoreCell(entry) {
   const cell = document.createElement("td");
-  const status = entry?.status ?? "no_response";
+  const status = getEntryStatus(entry);
   const className = status === "published" ? "score-pill--published" : status === "pending_review" ? "score-pill--pending" : "score-pill--missing";
-  const text = status === "published" ? `${entry.value}` : status === "pending_review" ? "待確認" : "—";
+  const result = status === "published" ? getPublishedResult(entry) : null;
+  const text = status === "published" ? `${result?.score ?? "—"}` : status === "pending_review" ? "待確認" : "—";
   const pill = appendText(cell, "span", text, `score-pill ${className}`);
-  if (status === "pending_review") pill.title = "此 EP 有多次回覆，正式分數尚待確認";
+  if (status === "pending_review") pill.title = "此 EP 有多次回覆，尚待確認正式分數";
   if (status === "no_response") pill.title = "目前沒有回覆資料";
+  if (result?.submittedAt) {
+    const time = appendText(cell, "time", result.submittedAt, "score-time");
+    time.title = "最高分回覆送出時間";
+  }
   return cell;
 }
 
