@@ -70,9 +70,35 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .gate-form-row button:hover, .gate-form-row button:focus-visible { background: #1e3d50; outline: 3px solid rgba(244, 185, 66, .35); }
 .gate-form-row button:disabled { cursor: wait; opacity: .65; }
 .gate-status { min-height: 1.6em; margin: .8rem 0 0; color: var(--warning); font-weight: 700; }
-.class-picker, .class-panel, .issue-panel { margin-bottom: 1.25rem; padding: clamp(1.2rem, 3vw, 2rem); background: var(--panel); border: 1px solid var(--line); border-radius: 1.1rem; box-shadow: 0 12px 28px rgba(16, 35, 51, .06); }
+.class-picker, .class-panel, .issue-panel, .form-links-panel, .review-panel { margin-bottom: 1.25rem; padding: clamp(1.2rem, 3vw, 2rem); background: var(--panel); border: 1px solid var(--line); border-radius: 1.1rem; box-shadow: 0 12px 28px rgba(16, 35, 51, .06); }
 .section-heading { align-items: center; margin-bottom: 1.2rem; }
 .data-status { margin: 0; color: var(--muted); font-size: .95rem; }
+
+.class-form { max-width: 38rem; }
+.class-form label { display: block; margin-bottom: .35rem; font-weight: 800; }
+.class-form-row { display: flex; gap: .65rem; }
+.class-form-row input { min-width: 0; flex: 1; padding: .75rem .85rem; border: 2px solid var(--line); border-radius: .65rem; color: var(--ink); font: inherit; }
+.class-form-row input:focus { border-color: var(--accent-deep); outline: 3px solid rgba(244, 185, 66, .28); }
+.class-form-row button { padding: .75rem 1rem; border: 2px solid var(--ink); border-radius: .65rem; background: var(--ink); color: white; font: inherit; font-weight: 800; cursor: pointer; }
+.class-form-row button:hover, .class-form-row button:focus-visible { background: #1e3d50; outline: 3px solid rgba(244, 185, 66, .35); }
+.class-status { min-height: 1.6em; margin: .8rem 0 0; color: var(--muted); font-weight: 700; }
+
+.form-links-panel { border-color: #b9dcd4; background: #f8fcfb; }
+.form-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .9rem; }
+.form-link-card { display: flex; min-height: 12rem; flex-direction: column; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: .85rem; background: white; text-align: center; }
+.form-link-label { margin: 0; font-size: 1.25rem; }
+.form-link-name { min-height: 3.2em; margin: 0; color: var(--muted); }
+.form-link-qr { width: 8rem; height: 8rem; object-fit: contain; border: 1px solid var(--line); border-radius: .4rem; }
+.form-link-actions { width: 100%; }
+.form-link-button { display: block; padding: .6rem .8rem; border-radius: .6rem; background: var(--success); color: white; font-weight: 800; text-decoration: none; }
+.form-link-button:hover, .form-link-button:focus-visible { background: #0f665d; outline: 3px solid rgba(20, 125, 114, .22); }
+.form-link-disabled { margin: auto 0; color: var(--warning); font-weight: 800; }
+
+.review-panel { border-color: #e2c585; background: #fffaf0; }
+.review-intro { color: var(--muted); }
+.review-table-frame { overflow-x: auto; border: 1px solid #e2c585; border-radius: .75rem; }
+.review-table-frame table { min-width: 1180px; }
+.review-table-frame th { background: var(--warning-soft); }
 
 .class-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
 .class-tab {
@@ -127,13 +153,14 @@ footer { display: flex; justify-content: space-between; gap: 1rem; width: min(11
   .heading-row, .section-heading, .class-panel__head, footer { align-items: flex-start; flex-direction: column; }
   .class-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .class-summary { text-align: left; }
-  .gate-form-row { flex-direction: column; }
+  .gate-form-row, .class-form-row { flex-direction: column; }
+  .form-links { grid-template-columns: 1fr; }
   footer { gap: .2rem; }
 }
 
 @media print {
   .masthead { padding: 1rem; color: black; background: white; border-bottom: 2px solid black; }
-  .masthead #page-subtitle, .projection-badge, .access-gate, .class-picker, .issue-panel, footer { display: none; }
+  .masthead #page-subtitle, .projection-badge, .access-gate, .class-picker, .form-links-panel, .issue-panel, .review-panel, footer { display: none; }
   main { width: 100%; padding: 0; }
   .class-panel { box-shadow: none; border: 0; }
 }
