@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json";
+const DATA_URL = "data/grades.enc.json?v=20260912-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 
 const el = {
@@ -208,7 +208,7 @@ function selectClass(className) {
 
 async function unlock(event) {
   event.preventDefault();
-  const password = el.passwordInput.value;
+  const password = el.passwordInput.value.normalize("NFKC").trim();
   if (!password) return;
   el.gateStatus.textContent = "驗證中…";
   el.passwordInput.disabled = true;
