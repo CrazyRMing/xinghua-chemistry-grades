@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="115學年度技高化學 EP 成績課堂展示頁">
+    <meta name="robots" content="noindex,nofollow">
+    <title>技高化學｜EP 成績</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="masthead">
+        <div class="eyebrow">115 學年度上學期 · 技高化學</div>
+        <div class="heading-row">
+          <div>
+            <h1 id="page-title">EP 成績發布</h1>
+            <p id="page-subtitle">選擇班級，查看本班各 EP 成績。</p>
+          </div>
+          <div class="projection-badge">課堂投影</div>
+        </div>
+      </header>
+
+      <main>
+        <section id="access-gate" class="access-gate" aria-labelledby="gate-title">
+          <p class="section-kicker">ACCESS</p>
+          <h2 id="gate-title">輸入密碼查看成績</h2>
+          <p id="gate-help">請輸入老師提供的課堂密碼；密碼正確後才會載入成績。</p>
+          <form id="gate-form" autocomplete="off">
+            <label for="password-input">課堂密碼</label>
+            <div class="gate-form-row">
+              <input id="password-input" name="password" type="password" inputmode="text" autocomplete="off" required>
+              <button type="submit">查看成績</button>
+            </div>
+          </form>
+          <p id="gate-status" class="gate-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <div id="protected-content" hidden>
+          <section class="class-picker" aria-labelledby="class-picker-title">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">CLASS</p>
+                <h2 id="class-picker-title">選擇班級</h2>
+              </div>
+              <p id="data-status" class="data-status" role="status">資料讀取中…</p>
+            </div>
+            <div id="class-tabs" class="class-tabs" role="tablist" aria-label="班級"></div>
+          </section>
+
+          <section id="class-panel" class="class-panel" aria-live="polite" hidden>
+            <div class="class-panel__head">
+              <div>
+                <p class="section-kicker">CURRENT CLASS</p>
+                <h2 id="class-title">—</h2>
+              </div>
+              <p id="class-summary" class="class-summary">—</p>
+            </div>
+
+            <div class="table-frame">
+              <table>
+                <caption id="table-caption">本班 EP 成績</caption>
+                <thead id="score-head"></thead>
+                <tbody id="score-body"></tbody>
+              </table>
+            </div>
+            <p class="table-note">「—」表示目前尚無回覆；「待確認」不列入正式成績。</p>
+          </section>
+
+          <section id="issue-panel" class="issue-panel" hidden>
+            <details>
+              <summary id="issue-summary">待核對資料</summary>
+              <p class="issue-intro">以下資料已隔離，尚未放入正式成績表。</p>
+              <div class="issue-table-frame">
+                <table>
+                  <thead>
+                    <tr><th>班級</th><th>座號</th><th>姓名</th><th>原因</th></tr>
+                  </thead>
+                  <tbody id="issue-body"></tbody>
+                </table>
+              </div>
+            </details>
+          </section>
+        </div>
+      </main>
+
+      <footer>
+        <span id="updated-at">—</span>
+        <span>資料僅供課堂成績展示</span>
+      </footer>
+    </div>
+  </body>
+</html>
