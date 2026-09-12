@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260912-6";
+const DATA_URL = "data/grades.enc.json?v=20260912-7";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 
 const el = {
