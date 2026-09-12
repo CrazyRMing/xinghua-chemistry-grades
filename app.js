@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260912-4";
+const DATA_URL = "data/grades.enc.json?v=20260912-5";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 
 const el = {
@@ -156,6 +156,16 @@ function getAttemptTime(attempt) {
   return attempt?.submitted_at ?? attempt?.submittedAt ?? attempt?.time ?? null;
 }
 
+function formatSubmittedAt(value) {
+  const text = String(value ?? "").trim();
+  const match = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)(?:\s+GMT[+-]\d+)?$/u);
+  if (!match) return text.replace(/\s+GMT[+-]\d+$/u, "");
+  let hour = Number(match[4]);
+  if (match[7] === "下午" && hour < 12) hour += 12;
+  if (match[7] === "上午" && hour === 12) hour = 0;
+  return `${match[1]}/${match[2].padStart(2, "0")}/${match[3].padStart(2, "0")} ${String(hour).padStart(2, "0")}:${match[5]}:${match[6]}`;
+}
+
 function parseAttemptTimestamp(value) {
   const match = String(value ?? "").match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)/u);
   if (!match) return null;
@@ -197,7 +207,7 @@ function scoreCell(entry) {
   if (status === "pending_review") pill.title = "此 EP 有多次回覆，尚待確認正式分數";
   if (status === "no_response") pill.title = "目前沒有回覆資料";
   if (result?.submittedAt) {
-    const time = appendText(cell, "time", result.submittedAt, "score-time");
+    const time = appendText(cell, "time", formatSubmittedAt(result.submittedAt), "score-time");
     time.title = "最高分回覆送出時間";
   }
   return cell;
