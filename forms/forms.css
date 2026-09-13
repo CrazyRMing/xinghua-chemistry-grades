@@ -1,0 +1,13 @@
+:root { color: #102333; background: #f5f8f6; font: 16px/1.6 system-ui, sans-serif; }
+body { margin: 0; }
+main { max-width: 70rem; margin: auto; padding: 2rem 1rem 4rem; }
+.eyebrow { color: #47716d; letter-spacing: .08em; }
+.intro { max-width: 42rem; }
+.forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+.form-card { padding: 1rem; background: white; border: 1px solid #c9d9d3; border-radius: .8rem; }
+.form-card h2 { font-size: 1rem; margin-top: 0; }
+button, a { font: inherit; }
+button { margin-left: .5rem; padding: .35rem .6rem; cursor: pointer; }
+.form-card img { display: block; max-width: 100%; margin: 1rem auto; image-rendering: pixelated; }
+.qr-sizes { text-align: center; }
+.error { color: #a33; }

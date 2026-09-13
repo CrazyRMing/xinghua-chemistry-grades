@@ -1,0 +1,445 @@
+{
+  "schema_version": 1,
+  "forms": [
+    {
+      "episode": "EP01",
+      "form_key": "EP01-A",
+      "label": "EP01-A",
+      "display_name": "古戰場新願望：反應接觸面",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdO24p0CDaBfcP_VdybVfyu5c9Aha3-NcSvLYF1P2RBF_RREw/viewform?usp=header",
+      "qr_path": "assets/qr/ep01-a.png"
+    },
+    {
+      "episode": "EP01",
+      "form_key": "EP01-B",
+      "label": "EP01-B",
+      "display_name": "古戰場新願望：反應接觸面",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSd91M6hfbur72JXm-TjRRZf5YgUms4PnZ1coyZLv3hVVdLujg/viewform?usp=header",
+      "qr_path": "assets/qr/ep01-b.png"
+    },
+    {
+      "episode": "EP02",
+      "form_key": "EP02",
+      "label": "EP02",
+      "display_name": "爸爸冒煙啦：地殼變動",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSes4j5QoipqrH1DMUxQTzvMYjq4xqtMGXNXnLcaFZdELHAxbw/viewform?usp=header",
+      "qr_path": "assets/qr/ep02.png"
+    },
+    {
+      "episode": "EP03",
+      "form_key": "EP03",
+      "label": "EP03",
+      "display_name": "我們去尋寶：數字運算",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfRxtiZBZnEnB9NAXxGp91Fw50C1CwbclGCUd17D_aGh4By9w/viewform?usp=header",
+      "qr_path": "assets/qr/ep03.png"
+    },
+    {
+      "episode": "EP04",
+      "form_key": "EP04",
+      "label": "EP04",
+      "display_name": "河水要回家：河水改道",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSe5-xoo_0PCETKmOcQ81E5N1IITUxpTZxrZG5dUSBMXV0ZJ4Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep04.png"
+    },
+    {
+      "episode": "EP05",
+      "form_key": "EP05",
+      "label": "EP05",
+      "display_name": "彩虹橋的約定：結構力學",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSe0p5xJtWI2spMo-44o_3gAIGm4tfePypxpNYC3nk3no4Pgbg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep05.png"
+    },
+    {
+      "episode": "EP06",
+      "form_key": "EP06",
+      "label": "EP06",
+      "display_name": "看不見的牽絆：奈米",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeImo6LGRaT_f5Oqb1GrFdB9foDjFp194br5PieH3ChaVYaJQ/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep06.png"
+    },
+    {
+      "episode": "EP07",
+      "form_key": "EP07",
+      "label": "EP07",
+      "display_name": "乃奈逃家了：地瓜的儲存",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSciitw6CfzmQdtSI0va5iyWFxyE7M3h50AIfo3wYn1mR43fCw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep07.png"
+    },
+    {
+      "episode": "EP08",
+      "form_key": "EP08",
+      "label": "EP08",
+      "display_name": "轉吧！青剛櫟：轉動量，角動量",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfOE9dbBBJHok7L5rZ_qL81KvAztXIWW5Zy36ytSoMLX0n2kw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep08.png"
+    },
+    {
+      "episode": "EP09",
+      "form_key": "EP09",
+      "label": "EP09",
+      "display_name": "彩虹跟我走：光的折射",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfU-xzuwl2K_r9VkQPDV9h5C4Wcx53lb5FVdOScPXeFEQJihA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep09.png"
+    },
+    {
+      "episode": "EP10",
+      "form_key": "EP10",
+      "label": "EP10",
+      "display_name": "消失的竹管水：連通管",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeARRcFRmRvEvqyeSDsHZ5gf9JekGJKD3NmeGKK67cu-gfBOA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep10.png"
+    },
+    {
+      "episode": "EP11",
+      "form_key": "EP11",
+      "label": "EP11",
+      "display_name": "魔術黑白變：炭灰的化學性質",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfOZr7a3h1bkx88XpPa2Mfan3fne6yP9q1RrHLkROSK6khTBw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep11.png"
+    },
+    {
+      "episode": "EP12",
+      "form_key": "EP12",
+      "label": "EP12",
+      "display_name": "不滅的溫暖：火堆與燃點",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScqtI0YHRDcRGN9n9LERTlovGAh8xnrAsjjo4RPWiK8X0_QnQ/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep12.png"
+    },
+    {
+      "episode": "EP13",
+      "form_key": "EP13",
+      "label": "EP13",
+      "display_name": "妳好，Mr Hu：慣性定律",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfp6LIj2hq5wg1gSSL6JRDI20DEPMv51ch72rCbVPKeW36f2Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep13.png"
+    },
+    {
+      "episode": "EP14",
+      "form_key": "EP14",
+      "label": "EP14",
+      "display_name": "知識的穀倉：煙燻木材防腐",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSek_pE1p6D1LrpnXC3STu_Slra8Rc97svGR5sZ97LkPt2uNIQ/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep14.png"
+    },
+    {
+      "episode": "EP15",
+      "form_key": "EP15",
+      "label": "EP15",
+      "display_name": "泰雅螺旋槳：圓周運動",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfCO14gn3JC4HMKgz__pNfDiuGlCsf0K0EAKB6jHuP0yMxO_w/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep15.png"
+    },
+    {
+      "episode": "EP16",
+      "form_key": "EP16",
+      "label": "EP16",
+      "display_name": "眼中的光芒：脈絡膜的光反射",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdEDs9dpVhYbkI-KOZq1V_XKtIyfhimZWjFhIX7Ky8zn9iGZw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep16.png"
+    },
+    {
+      "episode": "EP17",
+      "form_key": "EP17",
+      "label": "EP17",
+      "display_name": "竹筍傳情意：草酸",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfzhhpcqDhIvP-AH8OOqN7hnfdmCjmPFAcbboAT34uwwpm1Ew/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep17.png"
+    },
+    {
+      "episode": "EP18",
+      "form_key": "EP18",
+      "label": "EP18",
+      "display_name": "獵人的智慧：槓桿原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScIbtlAO4NNz_EopOHCCYyDFetLpGIa2lEIpGZ3g9Btdr3HJg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep18.png"
+    },
+    {
+      "episode": "EP19",
+      "form_key": "EP19",
+      "label": "EP19",
+      "display_name": "里昂的生日：梅納反應",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSffGlVwRBvCx-S0K4IHXw1OO5x7KY_KaphOhr8x5p6CwaEWEw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep19.png"
+    },
+    {
+      "episode": "EP20",
+      "form_key": "EP20",
+      "label": "EP20",
+      "display_name": "最強三石灶：平面幾何",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScKiI36yO6yu3htZtv8hfktDf1RIINqkVW0cMM9Z-D5X2DXgA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep20.png"
+    },
+    {
+      "episode": "EP21",
+      "form_key": "EP21",
+      "label": "EP21",
+      "display_name": "分享的暗號：香蕉與多巴胺",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSciHx3DJ3XNM_VpK9ktuOvnHcxk17xHNx0Zj6v6fd-OWRcZDg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep21.png"
+    },
+    {
+      "episode": "EP22",
+      "form_key": "EP22",
+      "label": "EP22",
+      "display_name": "白日夢流星：光的繞射",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScMSrZgbpIvyFjmj5RaFoqSC44XspvlYwOSpF6F4S9slhLl7A/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep22.png"
+    },
+    {
+      "episode": "EP23",
+      "form_key": "EP23",
+      "label": "EP23",
+      "display_name": "傳承的禮物：樹皮布的纖維化學",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfJNE50ZX9b8LobrLa6HO0IdPN2nJ-uLd2LCX8unv5f0_TkGg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep23.png"
+    },
+    {
+      "episode": "EP24",
+      "form_key": "EP24",
+      "label": "EP24",
+      "display_name": "魚叉急轉彎：光的折射",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfpw1JkzqKd7hROBMo5tmc7F3EJNeuG93M2ba0iwU4Oz8uFyw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep24.png"
+    },
+    {
+      "episode": "EP25",
+      "form_key": "EP25",
+      "label": "EP25",
+      "display_name": "飛卉的鬍子：脂肪的化學",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdLeUUbV4m0az1M-hfw7Xx2BKI2VrXbRvW0LelFUOodO_yI8Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep25.png"
+    },
+    {
+      "episode": "EP26",
+      "form_key": "EP26",
+      "label": "EP26",
+      "display_name": "合作好滋味：澱粉分子構造",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScAsdPPdA4meIjsXexbS6HVoHrcVUJlehdpeldd2bQ6GyO1Yg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep26.png"
+    },
+    {
+      "episode": "EP27",
+      "form_key": "EP27",
+      "label": "EP27",
+      "display_name": "新同學來了：音頻與發音體",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfVCo6AtjjUpANR9eJh74lwNl81HJpcBJbgjrGFsJKusAF44Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep27.png"
+    },
+    {
+      "episode": "EP28",
+      "form_key": "EP28",
+      "label": "EP28",
+      "display_name": "難忘好滋味：味覺與嗅覺",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeAbxNunwaURf9rXgsomqatmR5wIZqAzTpvUT_kpGw2MWNmIA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep28.png"
+    },
+    {
+      "episode": "EP29",
+      "form_key": "EP29",
+      "label": "EP29",
+      "display_name": "頂上有學問：重心",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSe_Oqw96vOcZI3RlqxhyUtyrLnFSIQsWDZJXj26ZsPq_cVYPg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep29.png"
+    },
+    {
+      "episode": "EP30",
+      "form_key": "EP30",
+      "label": "EP30",
+      "display_name": "肚皮飽眼皮鬆：人體消化",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSf88iKd-wPmoStHx9Lxngm7szSYcABlPl2EYyo1zjxa9htBOw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep30.png"
+    },
+    {
+      "episode": "EP31",
+      "form_key": "EP31",
+      "label": "EP31",
+      "display_name": "太陽不見了：日蝕的原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScJmcDgzcAd9VkskZ3IiZh8vuP6XIZOacbOun9Re0ysfHuKuQ/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep31.png"
+    },
+    {
+      "episode": "EP32",
+      "form_key": "EP32",
+      "label": "EP32",
+      "display_name": "誰的眼淚在發光：螢火蟲發光原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeZURQSGv7N73ioZOThsaicabXMscA-5FHJsy8BGOxDNC9Idw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep32.png"
+    },
+    {
+      "episode": "EP33",
+      "form_key": "EP33",
+      "label": "EP33",
+      "display_name": "開心看雲去：莢狀雲形成與氣候",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfrL0Rx_rDVVYw57AKlXIouBhVYkmMoM5T2Nu-IRqqeVZV7ag/viewform?usp=header",
+      "qr_path": "assets/qr/ep33.png"
+    },
+    {
+      "episode": "EP34",
+      "form_key": "EP34",
+      "label": "EP34",
+      "display_name": "頑石的熱情：熱容量",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfQg4YocsF7ABhkRhm0ir5_6dP8uUZa1JLi7uvpwuemSFFI2w/viewform?usp=header",
+      "qr_path": "assets/qr/ep34.png"
+    },
+    {
+      "episode": "EP35",
+      "form_key": "EP35",
+      "label": "EP35",
+      "display_name": "神奇石板屋：石板屋構造",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeokk8vkE6X75wo22Sg5zJlRbjQidS-mXbKzV8QIn9gsWRpjg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep35.png"
+    },
+    {
+      "episode": "EP36",
+      "form_key": "EP36",
+      "label": "EP36",
+      "display_name": "慕妮的果樹：斜面運動",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSedZIEoiTsFkP_uKHPza9OLg0YBHtOyHzgsYgBOz5pAqHjZ8Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep36.png"
+    },
+    {
+      "episode": "EP37",
+      "form_key": "EP37",
+      "label": "EP37",
+      "display_name": "接住好福氣：拋體運動",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeZxUzDW_-Pj9M6tUgK04a9WbqZ6LBvXGoCNNb62Ox83ZM1cg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep37.png"
+    },
+    {
+      "episode": "EP38",
+      "form_key": "EP38",
+      "label": "EP38",
+      "display_name": "新娘盪鞦韆：單擺運動",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeWRelIBjKPJo2Qw5HUklhiLQM5GoiJ0W3M5TJDX5wDx81IqA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep38.png"
+    },
+    {
+      "episode": "EP39",
+      "form_key": "EP39",
+      "label": "EP39",
+      "display_name": "真心不怕火煉：熱脹冷縮",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSewaSfekxe5omeh4rD_CxbAgnpx373CD7O1Lqt7PqvwyI6CLg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep39.png"
+    },
+    {
+      "episode": "EP40",
+      "form_key": "EP40",
+      "label": "EP40",
+      "display_name": "特別篇：夢想的種子：太空站生活體驗",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfBVwe_a6toFZ4SXTFzOzBWjzcfS_rpV93-eLd8yVhXpdJ3MQ/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep40.png"
+    },
+    {
+      "episode": "EP41",
+      "form_key": "EP41",
+      "label": "EP41",
+      "display_name": "海上的拼圖：太空會合",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfIPFtNKnh0MNW8JfT7wiDG0yZeM1WsYsTRQu_x_XZG4w09-g/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep41.png"
+    },
+    {
+      "episode": "EP42",
+      "form_key": "EP42",
+      "label": "EP42",
+      "display_name": "智慧地下屋：低氣壓與排水原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSduE2L2mGlQxIBXs9-qa9Vm7ozd6x04Si3IHStMCjCAOLmLvg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep42.png"
+    },
+    {
+      "episode": "EP43",
+      "form_key": "EP43",
+      "label": "EP43",
+      "display_name": "追逐飛魚的曆法：光電效應",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfdr991_y0ahbFXwFXiWIUkBs4N8Ana99ay9VNndYEMMEg6Uw/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep43.png"
+    },
+    {
+      "episode": "EP44",
+      "form_key": "EP44",
+      "label": "EP44",
+      "display_name": "水芋田與宇宙：毛細現象",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScmIysShpJWPzjIdKetIFI-a667Uw3m5ADSsGDfxIwbJ8h4yA/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep44.png"
+    },
+    {
+      "episode": "EP45",
+      "form_key": "EP45",
+      "label": "EP45",
+      "display_name": "布農族行星：恆星、行星與衛星",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdEao0AtjB0B_fxoZtUC9zj1t5vUUW_Q-IqZMaGAT_g1VNlRg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep45.png"
+    },
+    {
+      "episode": "EP46",
+      "form_key": "EP46",
+      "label": "EP46",
+      "display_name": "約定的刻痕：月相原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfd8umb0Tg0D0awTjp3bpYc0YK0wZPyF-K3GL_Rxv7eAqz95Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep46.png"
+    },
+    {
+      "episode": "EP47",
+      "form_key": "EP47",
+      "label": "EP47",
+      "display_name": "努力不停歇：角動量與陀螺儀原理",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSf0gKZQmaHffTFCHxhBEMK61wEHFzl1PBT3sFOefExJaQle_Q/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep47.png"
+    },
+    {
+      "episode": "EP48",
+      "form_key": "EP48",
+      "label": "EP48",
+      "display_name": "天外的想念：聲音傳遞與介質",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScS18hLlsnKZAFu_e5fDlnXgtywf05XcyPre1H_YxifTCaF7A/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep48.png"
+    },
+    {
+      "episode": "EP49",
+      "form_key": "EP49",
+      "label": "EP49",
+      "display_name": "與星月共舞的樹：地月公轉與自轉",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSfed-iT-rvawpWMmETKkZtJI-_pzEQXVRijATlsqnjAgdXZPg/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep49.png"
+    },
+    {
+      "episode": "EP50",
+      "form_key": "EP50",
+      "label": "EP50",
+      "display_name": "日影與吐水：植物吐水與日影計時",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLScs95tzjU20zvjYZRxmoRDBD6ZDXgs75F_mTf7JdJmNA88x0A/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep50.png"
+    },
+    {
+      "episode": "EP51",
+      "form_key": "EP51",
+      "label": "EP51",
+      "display_name": "李姑老與豬邁：動物習性與生態",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdjfvB_-VtyCf9H7Radf3PGxtoX2uGYgYYXujPqh6vKAt012A/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep51.png"
+    },
+    {
+      "episode": "EP52",
+      "form_key": "EP52",
+      "label": "EP52",
+      "display_name": "屬於土地的孤獨：順向坡與地質穩定",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSchAQSesY5-_2hv2Kkp1yO4ayg1_nS5cfivKcMF6e534Fty0w/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep52.png"
+    },
+    {
+      "episode": "EP53",
+      "form_key": "EP53",
+      "label": "EP53",
+      "display_name": "失重的少年：人造重力與失重生理影響",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSeAarHeVE6AvQDkHQguO1F0fe0JtFJ1AWdtiFESPRMqtXnk-A/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep53.png"
+    },
+    {
+      "episode": "EP54",
+      "form_key": "EP54",
+      "label": "EP54",
+      "display_name": "勤勞的祝福：嗅覺適應與味覺",
+      "fill_url": "https://docs.google.com/forms/d/e/1FAIpQLSdCS73FPdiFllnjRJHJDjKViPHfy_JLGhV8-PrVNx-8IIUOww/viewform?usp=publish-editor",
+      "qr_path": "assets/qr/ep54.png"
+    }
+  ]
+}

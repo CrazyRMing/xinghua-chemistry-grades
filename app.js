@@ -15,8 +15,6 @@ const el = {
   classInput: document.querySelector("#class-input"),
   classStatus: document.querySelector("#class-status"),
   status: document.querySelector("#data-status"),
-  formLinksPanel: document.querySelector("#form-links-panel"),
-  formLinks: document.querySelector("#form-links"),
   panel: document.querySelector("#class-panel"),
   classTitle: document.querySelector("#class-title"),
   classSummary: document.querySelector("#class-summary"),
@@ -125,53 +123,6 @@ function renderHeader() {
   el.subtitle.textContent = REVIEW_MODE ? "查看需要核對的表單回覆。" : "輸入班級號碼，查看本班各 EP 成績。";
   el.status.textContent = REVIEW_MODE ? `${data.review_submissions?.length ?? 0} 筆回覆需要核對` : `${data.episodes.length} 個 EP · 請輸入班級號碼查看成績`;
   el.updatedAt.textContent = `更新日期：${data.updated_at}`;
-}
-
-function isSafeFormUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.hostname === "docs.google.com" && url.pathname.startsWith("/forms/");
-  } catch {
-    return false;
-  }
-}
-
-function renderFormLinks() {
-  const forms = Array.isArray(data.forms) ? data.forms : [];
-  el.formLinksPanel.hidden = forms.length === 0;
-  el.formLinks.replaceChildren();
-  for (const form of forms) {
-    const card = document.createElement("article");
-    card.className = "form-link-card";
-    appendText(card, "h3", form.label ?? form.episode, "form-link-label");
-    appendText(card, "p", form.display_name ?? "學生填寫表單", "form-link-name");
-    const linkIsUsable = form.status === "published" && isSafeFormUrl(form.fill_url);
-    if (!linkIsUsable) {
-      appendText(card, "p", "尚未發布，暫無學生填寫入口", "form-link-disabled");
-      el.formLinks.append(card);
-      continue;
-    }
-    if (typeof form.qr_path === "string" && form.qr_path.startsWith("assets/qr/")) {
-      const image = document.createElement("img");
-      image.className = "form-link-qr";
-      image.src = form.qr_path;
-      image.alt = `${form.label ?? form.episode} 填寫表單 QR code`;
-      image.loading = "lazy";
-      card.append(image);
-    }
-    const actions = document.createElement("div");
-    actions.className = "form-link-actions";
-    const link = document.createElement("a");
-    link.className = "form-link-button";
-    link.href = form.fill_url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = `開啟 ${form.label ?? form.episode} 填寫表單`;
-    link.setAttribute("aria-label", `開啟 ${form.label ?? form.episode} 填寫表單`);
-    actions.append(link);
-    card.append(actions);
-    el.formLinks.append(card);
-  }
 }
 
 const reviewCategoryLabels = {
@@ -375,13 +326,11 @@ async function unlock(event) {
     renderHeader();
     if (REVIEW_MODE) {
       el.classPicker.hidden = true;
-      el.formLinksPanel.hidden = true;
       el.panel.hidden = true;
       el.issuePanel.hidden = true;
       renderReview();
     } else {
       el.reviewPanel.hidden = true;
-      renderFormLinks();
       el.classStatus.textContent = "請輸入班級號碼查看成績。";
       el.classInput.focus();
       renderIssues();
