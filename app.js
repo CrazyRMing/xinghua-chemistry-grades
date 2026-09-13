@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260912-8";
+const DATA_URL = "data/grades.enc.json?v=20260913-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const REVIEW_MODE = new URLSearchParams(window.location.search).get("view") === "review";
 
