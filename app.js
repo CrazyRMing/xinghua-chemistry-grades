@@ -14,10 +14,21 @@ const el = {
   classForm: document.querySelector("#class-form"),
   classInput: document.querySelector("#class-input"),
   classStatus: document.querySelector("#class-status"),
+  studentPicker: document.querySelector("#student-picker"),
+  studentForm: document.querySelector("#student-form"),
+  studentClassInput: document.querySelector("#student-class-input"),
+  studentSeatInput: document.querySelector("#student-seat-input"),
+  studentStatus: document.querySelector("#student-status"),
+  studentPanel: document.querySelector("#student-panel"),
+  studentTitle: document.querySelector("#student-title"),
+  studentSummary: document.querySelector("#student-summary"),
+  studentBody: document.querySelector("#student-body"),
   status: document.querySelector("#data-status"),
   panel: document.querySelector("#class-panel"),
   classTitle: document.querySelector("#class-title"),
   classSummary: document.querySelector("#class-summary"),
+  episodeViewRecent: document.querySelector("#episode-view-recent"),
+  episodeViewAll: document.querySelector("#episode-view-all"),
   tableCaption: document.querySelector("#table-caption"),
   scoreHead: document.querySelector("#score-head"),
   scoreBody: document.querySelector("#score-body"),
@@ -31,6 +42,10 @@ const el = {
 };
 
 let data;
+let currentClassName = null;
+let episodeView = "recent";
+
+const RECENT_EPISODE_COUNT = 6;
 
 function appendText(parent, tag, text, className) {
   const node = document.createElement(tag);
@@ -108,14 +123,48 @@ function getCounts(className, episodeId) {
   return counts;
 }
 
-function formatClassSummary(className) {
-  return data.episodes.map((episode) => {
+function getVisibleEpisodes() {
+  if (episodeView === "all") return data.episodes;
+  return data.episodes.slice(-Math.min(RECENT_EPISODE_COUNT, data.episodes.length));
+}
+
+function formatEpisodeRange(episodes) {
+  if (!episodes.length) return "目前沒有 EP";
+  if (episodes.length === 1) return episodes[0].label;
+  return `${episodes[0].label}–${episodes.at(-1).label}`;
+}
+
+function renderClassSummary(className, episodes) {
+  el.classSummary.replaceChildren();
+  for (const episode of episodes) {
     const counts = getCounts(className, episode.id);
+    const item = document.createElement("span");
+    item.className = "class-summary__item";
+    appendText(item, "strong", episode.label);
     const details = [`${counts.published} 筆已確認`];
     if (counts.pending) details.push(`${counts.pending} 筆待確認`);
     if (counts.missing) details.push(`${counts.missing} 人尚無回覆`);
-    return `${episode.label}：${details.join('、')}`;
-  }).join("　");
+    appendText(item, "span", details.join("、"));
+    el.classSummary.append(item);
+  }
+}
+
+function updateEpisodeViewControls() {
+  const recentEpisodes = data.episodes.slice(-Math.min(RECENT_EPISODE_COUNT, data.episodes.length));
+  el.episodeViewRecent.textContent = `最新 ${recentEpisodes.length} 次（${formatEpisodeRange(recentEpisodes)}）`;
+  el.episodeViewAll.textContent = `查看全部（${formatEpisodeRange(data.episodes)}）`;
+  el.episodeViewRecent.setAttribute("aria-pressed", String(episodeView === "recent"));
+  el.episodeViewAll.setAttribute("aria-pressed", String(episodeView === "all"));
+}
+
+function renderClassView() {
+  if (!currentClassName) return;
+  const episodes = getVisibleEpisodes();
+  el.classTitle.textContent = `${currentClassName} 班`;
+  renderClassSummary(currentClassName, episodes);
+  el.tableCaption.textContent = `${currentClassName} 班｜${formatEpisodeRange(episodes)} 成績`;
+  renderScoreHead(episodes);
+  renderRows(currentClassName, episodes);
 }
 
 function renderHeader() {
@@ -169,11 +218,11 @@ function renderReview() {
   }
 }
 
-function renderScoreHead() {
+function renderScoreHead(episodes) {
   const row = document.createElement("tr");
   appendText(row, "th", "座號");
   appendText(row, "th", "姓名");
-  for (const episode of data.episodes) appendText(row, "th", `${episode.label}（最高分／送出時間）`);
+  for (const episode of episodes) appendText(row, "th", `${episode.label}（最高分／送出時間）`);
   el.scoreHead.replaceChildren(row);
 }
 
@@ -244,13 +293,13 @@ function scoreCell(entry) {
   return cell;
 }
 
-function renderRows(className) {
+function renderRows(className, episodes) {
   const rows = data.students.filter((student) => student.class === className);
   el.scoreBody.replaceChildren();
   if (!rows.length) {
     const row = document.createElement("tr");
     const cell = appendText(row, "td", "目前沒有名單資料", "empty-state");
-    cell.colSpan = data.episodes.length + 2;
+    cell.colSpan = episodes.length + 2;
     el.scoreBody.append(row);
     return;
   }
@@ -258,9 +307,59 @@ function renderRows(className) {
     const row = document.createElement("tr");
     appendText(row, "td", student.seat);
     appendText(row, "td", student.name, "student-name");
-    for (const episode of data.episodes) row.append(scoreCell(student.scores[episode.id]));
+    for (const episode of episodes) row.append(scoreCell(student.scores[episode.id]));
     el.scoreBody.append(row);
   }
+}
+
+function normalizeSeatInput(value) {
+  const digits = String(value ?? "").normalize("NFKC").replace(/\D/gu, "");
+  return digits ? String(Number(digits)) : "";
+}
+
+function renderStudentResults(student) {
+  el.studentBody.replaceChildren();
+  for (const episode of data.episodes) {
+    const row = document.createElement("tr");
+    appendText(row, "td", episode.label);
+    row.append(scoreCell(student.scores?.[episode.id]));
+    el.studentBody.append(row);
+  }
+}
+
+function lookupStudent(event) {
+  event.preventDefault();
+  const className = normalizeClassInput(el.studentClassInput.value);
+  const seat = normalizeSeatInput(el.studentSeatInput.value);
+  el.studentClassInput.value = className;
+  if (!/^\d{3}$/u.test(className)) {
+    el.studentPanel.hidden = true;
+    el.studentStatus.textContent = "請輸入三位數班級號碼。";
+    return;
+  }
+  if (!data.classes.includes(className)) {
+    el.studentPanel.hidden = true;
+    el.studentStatus.textContent = "查無此班級，請確認班級號碼。";
+    return;
+  }
+  if (!/^\d{1,2}$/u.test(seat)) {
+    el.studentPanel.hidden = true;
+    el.studentStatus.textContent = "請輸入一至兩位數座號。";
+    return;
+  }
+
+  const student = data.students.find((candidate) => candidate.class === className && normalizeSeatInput(candidate.seat) === seat);
+  if (!student) {
+    el.studentPanel.hidden = true;
+    el.studentStatus.textContent = "查無此班級與座號，請確認輸入內容。";
+    return;
+  }
+
+  el.studentTitle.textContent = `${student.class} 班 ${student.seat} 號｜${student.name}`;
+  el.studentSummary.textContent = `共 ${data.episodes.length} 個 EP；每個 EP 顯示最高分與該次送出時間。`;
+  renderStudentResults(student);
+  el.studentPanel.hidden = false;
+  el.studentStatus.textContent = `已找到 ${student.name} 的成績。`;
 }
 
 function renderIssues() {
@@ -280,12 +379,15 @@ function renderIssues() {
 }
 
 function selectClass(className) {
-  el.classTitle.textContent = `${className} 班`;
-  el.classSummary.textContent = formatClassSummary(className);
-  el.tableCaption.textContent = `${className} 班｜全班 EP 成績`;
-  renderScoreHead();
-  renderRows(className);
+  currentClassName = className;
+  renderClassView();
   el.panel.hidden = false;
+}
+
+function setEpisodeView(view) {
+  episodeView = view === "all" ? "all" : "recent";
+  updateEpisodeViewControls();
+  renderClassView();
 }
 
 function normalizeClassInput(value) {
@@ -326,11 +428,14 @@ async function unlock(event) {
     renderHeader();
     if (REVIEW_MODE) {
       el.classPicker.hidden = true;
+      el.studentPicker.hidden = true;
+      el.studentPanel.hidden = true;
       el.panel.hidden = true;
       el.issuePanel.hidden = true;
       renderReview();
     } else {
       el.reviewPanel.hidden = true;
+      updateEpisodeViewControls();
       el.classStatus.textContent = "請輸入班級號碼查看成績。";
       el.classInput.focus();
       renderIssues();
@@ -346,3 +451,6 @@ async function unlock(event) {
 
 el.gateForm.addEventListener("submit", unlock);
 el.classForm.addEventListener("submit", lookupClass);
+el.studentForm.addEventListener("submit", lookupStudent);
+el.episodeViewRecent.addEventListener("click", () => setEpisodeView("recent"));
+el.episodeViewAll.addEventListener("click", () => setEpisodeView("all"));

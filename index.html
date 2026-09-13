@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css">
-    <script type="module" src="app.js?v=20260913-2"></script>
+    <link rel="stylesheet" href="styles.css?v=20260913-4">
+    <script type="module" src="app.js?v=20260913-3"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -60,13 +60,62 @@
             <p id="class-status" class="class-status" role="status" aria-live="polite"></p>
           </section>
 
+          <section id="student-picker" class="student-picker" aria-labelledby="student-picker-title">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">STUDENT</p>
+                <h2 id="student-picker-title">查詢個別學生</h2>
+              </div>
+              <p class="data-status">輸入班級與座號，查看 EP01–EP54</p>
+            </div>
+            <form id="student-form" class="student-form" autocomplete="off">
+              <div class="student-field">
+                <label for="student-class-input">班級號碼</label>
+                <input id="student-class-input" name="student-class" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：607" pattern="[0-9]{3}" required>
+              </div>
+              <div class="student-field">
+                <label for="student-seat-input">座號</label>
+                <input id="student-seat-input" name="student-seat" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：02" pattern="[0-9]{1,2}" required>
+              </div>
+              <button type="submit">查詢學生</button>
+            </form>
+            <p id="student-status" class="student-status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section id="student-panel" class="student-panel" aria-live="polite" hidden>
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">STUDENT RECORD</p>
+                <h2 id="student-title">—</h2>
+              </div>
+              <p id="student-summary" class="data-status">—</p>
+            </div>
+            <div class="student-table-frame">
+              <table class="student-score-table">
+                <caption>各 EP 最高分與送出時間</caption>
+                <thead>
+                  <tr><th>EP</th><th>最高分／送出時間</th></tr>
+                </thead>
+                <tbody id="student-body"></tbody>
+              </table>
+            </div>
+          </section>
+
           <section id="class-panel" class="class-panel" aria-live="polite" hidden>
             <div class="class-panel__head">
               <div>
                 <p class="section-kicker">CURRENT CLASS</p>
                 <h2 id="class-title">—</h2>
               </div>
-              <p id="class-summary" class="class-summary">—</p>
+              <div id="class-summary" class="class-summary" role="list" aria-label="各 EP 回覆摘要"></div>
+            </div>
+
+            <div class="episode-view-toolbar">
+              <span class="episode-view-label">成績顯示範圍</span>
+              <div class="episode-view-controls" role="group" aria-label="成績顯示範圍">
+                <button id="episode-view-recent" type="button" aria-pressed="true">最新 6 次</button>
+                <button id="episode-view-all" type="button" aria-pressed="false">查看全部</button>
+              </div>
             </div>
 
             <div class="table-frame">
