@@ -3,6 +3,16 @@ body { margin: 0; }
 main { max-width: 70rem; margin: auto; padding: 2rem 1rem 4rem; }
 .eyebrow { color: #47716d; letter-spacing: .08em; }
 .intro { max-width: 42rem; }
+.access-gate { max-width: 42rem; margin: 1.5rem 0; padding: 1.25rem; background: white; border: 1px solid #c9d9d3; border-radius: .8rem; }
+.section-kicker { margin: 0; color: #c18512; font-size: .8rem; font-weight: 800; letter-spacing: .12em; }
+.access-gate h2 { margin: .25rem 0 .5rem; }
+.access-gate label { display: block; margin-bottom: .35rem; font-weight: 700; }
+.gate-form-row { display: flex; gap: .75rem; }
+.gate-form-row input { min-width: 0; flex: 1; padding: .55rem .7rem; border: 1px solid #aebdbc; border-radius: .55rem; font: inherit; }
+.gate-form-row button { margin: 0; padding: .55rem .8rem; border: 0; border-radius: .55rem; background: #147d72; color: white; font-weight: 700; }
+.gate-form-row button:disabled { cursor: wait; opacity: .65; }
+.gate-status { min-height: 1.5em; margin-bottom: 0; color: #a33; font-weight: 700; }
+.forms[hidden], .form-card img[hidden], .qr-sizes[hidden] { display: none; }
 .forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
 .form-card { padding: 1rem; background: white; border: 1px solid #c9d9d3; border-radius: .8rem; }
 .form-card h2 { font-size: 1rem; margin-top: 0; }
