@@ -4,31 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <title>技高化學｜課堂表單入口</title>
-    <link rel="stylesheet" href="forms.css?v=20260913-3">
+    <title>技高化學｜課堂入口</title>
   </head>
   <body>
-    <main>
-      <p class="eyebrow">115 學年度上學期 · 技高化學</p>
-      <h1>課堂表單入口</h1>
-      <p class="intro">輸入課堂密碼後才會顯示填寫表單。QR code 預設隱藏，點擊後可選擇放大尺寸。</p>
-      <section id="access-gate" class="access-gate" aria-labelledby="gate-title">
-        <p class="section-kicker">ACCESS</p>
-        <h2 id="gate-title">輸入密碼查看表單入口</h2>
-        <p>密碼正確後才載入表單清單與填寫入口。</p>
-        <form id="gate-form" autocomplete="off">
-          <label for="password-input">課堂密碼</label>
-          <div class="gate-form-row">
-            <input id="password-input" name="password" type="password" autocomplete="off" required>
-            <button type="submit">查看表單入口</button>
-          </div>
-        </form>
-        <p id="gate-status" class="gate-status" role="status" aria-live="polite"></p>
-      </section>
-      <p id="status" role="status" aria-live="polite"></p>
-      <section id="forms" class="forms" aria-live="polite" hidden></section>
-      <p><a href="../">返回成績公告</a></p>
-    </main>
-    <script type="module" src="forms.js"></script>
+    <p>正在開啟受密碼保護的成績與課堂表單入口…</p>
+    <p><a href="../">前往課堂入口</a></p>
+    <script>
+      const key = new URLSearchParams(location.search).get("key");
+      location.replace(key ? `../?form=${encodeURIComponent(key)}` : "../");
+    </script>
   </body>
 </html>

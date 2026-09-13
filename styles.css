@@ -101,13 +101,20 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 
 .form-links-panel { border-color: #b9dcd4; background: #f8fcfb; }
 .form-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .9rem; }
+.form-links-panel[hidden], .form-link-qr[hidden], .form-link-sizes[hidden] { display: none; }
+.form-links-intro { color: var(--muted); }
 .form-link-card { display: flex; min-height: 12rem; flex-direction: column; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: .85rem; background: white; text-align: center; }
 .form-link-label { margin: 0; font-size: 1.25rem; }
 .form-link-name { min-height: 3.2em; margin: 0; color: var(--muted); }
-.form-link-qr { width: 8rem; height: 8rem; object-fit: contain; border: 1px solid var(--line); border-radius: .4rem; }
-.form-link-actions { width: 100%; }
-.form-link-button { display: block; padding: .6rem .8rem; border-radius: .6rem; background: var(--success); color: white; font-weight: 800; text-decoration: none; }
+.form-link-qr { display: block; width: 8rem; height: 8rem; max-width: 100%; object-fit: contain; border: 1px solid var(--line); border-radius: .4rem; }
+.form-link-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; width: 100%; }
+.form-link-button { display: inline-block; padding: .6rem .8rem; border: 1px solid transparent; border-radius: .6rem; background: var(--success); color: white; font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
 .form-link-button:hover, .form-link-button:focus-visible { background: #0f665d; outline: 3px solid rgba(20, 125, 114, .22); }
+.form-link-button--secondary { border-color: #aebdbc; background: white; color: var(--ink); }
+.form-link-button--secondary:hover, .form-link-button--secondary:focus-visible { background: #f1f6f4; color: var(--ink); }
+.form-link-sizes { display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem; }
+.form-link-sizes button { padding: .35rem .55rem; border: 1px solid #aebdbc; border-radius: .5rem; background: white; color: var(--ink); font: inherit; font-size: .85rem; cursor: pointer; }
+.form-link-sizes button:hover, .form-link-sizes button:focus-visible { border-color: var(--success); outline: 3px solid rgba(20, 125, 114, .16); }
 .form-link-disabled { margin: auto 0; color: var(--warning); font-weight: 800; }
 
 .review-panel { border-color: #e2c585; background: #fffaf0; }

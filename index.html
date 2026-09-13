@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css?v=20260913-4">
-    <script type="module" src="app.js?v=20260913-3"></script>
+    <link rel="stylesheet" href="styles.css?v=20260913-5">
+    <script type="module" src="app.js?v=20260913-4"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -20,7 +20,7 @@
             <p id="page-subtitle">輸入班級號碼，查看本班各 EP 成績。</p>
           </div>
           <div class="header-actions">
-            <a class="projection-badge" href="forms/">課堂表單入口</a>
+            <a class="projection-badge" href="#form-links-panel">課堂表單入口</a>
             <span class="projection-badge">課堂投影</span>
           </div>
         </div>
@@ -30,7 +30,7 @@
         <section id="access-gate" class="access-gate" aria-labelledby="gate-title">
           <p class="section-kicker">ACCESS</p>
           <h2 id="gate-title">輸入密碼查看成績</h2>
-          <p id="gate-help">請輸入老師提供的課堂密碼；密碼正確後才會載入成績。</p>
+          <p id="gate-help">請輸入老師提供的課堂密碼；密碼正確後才會載入成績與表單入口。同一瀏覽分頁登入後 1 小時內免重新登入。</p>
           <form id="gate-form" autocomplete="off">
             <label for="password-input">課堂密碼</label>
             <div class="gate-form-row">
@@ -58,6 +58,18 @@
               </div>
             </form>
             <p id="class-status" class="class-status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section id="form-links-panel" class="form-links-panel" aria-labelledby="form-links-title" hidden>
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">FORMS</p>
+                <h2 id="form-links-title">課堂表單入口</h2>
+              </div>
+              <p id="form-links-status" class="data-status" role="status">登入後載入表單入口…</p>
+            </div>
+            <p class="form-links-intro">點擊「開啟填寫頁」進入表單；QR code 預設隱藏，點擊後可選擇放大尺寸。</p>
+            <div id="form-links" class="form-links" aria-live="polite"></div>
           </section>
 
           <section id="student-picker" class="student-picker" aria-labelledby="student-picker-title">

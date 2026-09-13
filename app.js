@@ -1,6 +1,11 @@
 const DATA_URL = "data/grades.enc.json?v=20260913-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
+const FORMS_DATA_URL = "forms/manifest.enc.json?v=20260913-1";
+const FORMS_DEFAULT_AAD = "xinghua-chemistry-forms-v1";
+const SESSION_KEY = "xinghua-chemistry-session-v1";
+const SESSION_TTL_MS = 60 * 60 * 1000;
 const REVIEW_MODE = new URLSearchParams(window.location.search).get("view") === "review";
+const REQUESTED_FORM_KEY = new URLSearchParams(window.location.search).get("form");
 
 const el = {
   title: document.querySelector("#page-title"),
@@ -14,6 +19,9 @@ const el = {
   classForm: document.querySelector("#class-form"),
   classInput: document.querySelector("#class-input"),
   classStatus: document.querySelector("#class-status"),
+  formLinksPanel: document.querySelector("#form-links-panel"),
+  formLinksStatus: document.querySelector("#form-links-status"),
+  formLinks: document.querySelector("#form-links"),
   studentPicker: document.querySelector("#student-picker"),
   studentForm: document.querySelector("#student-form"),
   studentClassInput: document.querySelector("#student-class-input"),
@@ -42,8 +50,10 @@ const el = {
 };
 
 let data;
+let formManifest;
 let currentClassName = null;
 let episodeView = "recent";
+let activating = false;
 
 const RECENT_EPISODE_COUNT = 6;
 
@@ -60,8 +70,8 @@ function decodeBase64(value) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-async function decryptPayload(password) {
-  const response = await fetch(DATA_URL, { cache: "no-store" });
+async function decryptEnvelope(url, password, defaultAad) {
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const envelope = await response.json();
   if (envelope.version !== 1 || envelope.kdf !== "PBKDF2-SHA-256" || envelope.cipher !== "AES-256-GCM") {
@@ -98,17 +108,135 @@ async function decryptPayload(password) {
     {
       name: "AES-GCM",
       iv: decodeBase64(envelope.iv),
-      additionalData: textEncoder.encode(envelope.aad || DEFAULT_AAD),
+      additionalData: textEncoder.encode(envelope.aad || defaultAad),
       tagLength: 128
     },
     key,
     encrypted
   );
-  const payload = JSON.parse(new TextDecoder().decode(plainBytes));
+  return JSON.parse(new TextDecoder().decode(plainBytes));
+}
+
+async function decryptPayload(password) {
+  const payload = await decryptEnvelope(DATA_URL, password, DEFAULT_AAD);
   if (!Array.isArray(payload.classes) || !Array.isArray(payload.episodes) || !Array.isArray(payload.students)) {
     throw new Error("Invalid grade payload");
   }
   return payload;
+}
+
+async function decryptFormManifest(password) {
+  const manifest = await decryptEnvelope(FORMS_DATA_URL, password, FORMS_DEFAULT_AAD);
+  if (manifest.schema_version !== 1 || !Array.isArray(manifest.forms)) {
+    throw new Error("Invalid form manifest");
+  }
+  return manifest;
+}
+
+function readSessionPassword() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
+    if (saved && typeof saved.password === "string" && saved.password && Number(saved.expiresAt) > Date.now()) return saved.password;
+    clearSessionPassword();
+  } catch {
+    clearSessionPassword();
+  }
+  return null;
+}
+
+function saveSessionPassword(password) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ password, expiresAt: Date.now() + SESSION_TTL_MS }));
+  } catch {
+    // Private browsing can deny sessionStorage; manual login still works for this page load.
+  }
+}
+
+function clearSessionPassword() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
+function safeUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "docs.google.com" && url.pathname.startsWith("/forms/") ? url.href : null;
+  } catch { return null; }
+}
+
+function safeQrPath(value) {
+  const path = String(value ?? "");
+  return /^assets\/qr\/[a-z0-9-]+\.png$/u.test(path) ? path : null;
+}
+
+function renderFormLink(form) {
+  const card = document.createElement("article");
+  card.className = "form-link-card";
+  appendText(card, "h3", form.label ?? form.form_key ?? "課堂表單", "form-link-label");
+  appendText(card, "p", form.display_name ?? "學生填寫表單", "form-link-name");
+
+  const actions = document.createElement("div");
+  actions.className = "form-link-actions";
+  const link = safeUrl(form.fill_url);
+  if (link) {
+    const open = document.createElement("a");
+    open.className = "form-link-button";
+    open.href = link;
+    open.target = "_blank";
+    open.rel = "noopener noreferrer";
+    open.textContent = "開啟填寫頁";
+    actions.append(open);
+  } else {
+    appendText(card, "p", "此表單入口無效。", "form-link-disabled");
+  }
+
+  const qrPath = safeQrPath(form.qr_path);
+  if (qrPath) {
+    const qr = document.createElement("img");
+    qr.className = "form-link-qr";
+    qr.src = qrPath;
+    qr.alt = `${form.label ?? form.form_key} 填寫表單 QR code`;
+    qr.hidden = true;
+    qr.loading = "lazy";
+
+    const toggle = document.createElement("button");
+    toggle.className = "form-link-button form-link-button--secondary";
+    toggle.type = "button";
+    toggle.textContent = "顯示 QR code";
+    toggle.setAttribute("aria-expanded", "false");
+
+    const sizes = document.createElement("div");
+    sizes.className = "form-link-sizes";
+    sizes.hidden = true;
+    for (const size of [240, 360, 480]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${size}px`;
+      button.addEventListener("click", () => {
+        qr.style.width = `${size}px`;
+        qr.style.height = `${size}px`;
+      });
+      sizes.append(button);
+    }
+    toggle.addEventListener("click", () => {
+      const show = qr.hidden;
+      qr.hidden = !show;
+      sizes.hidden = !show;
+      toggle.textContent = show ? "隱藏 QR code" : "顯示 QR code";
+      toggle.setAttribute("aria-expanded", String(show));
+    });
+    actions.append(toggle);
+    card.append(actions, qr, sizes);
+  } else {
+    card.append(actions);
+  }
+  return card;
+}
+
+function renderFormPortal(manifest) {
+  el.formLinks.replaceChildren();
+  for (const form of manifest.forms) el.formLinks.append(renderFormLink(form));
+  el.formLinksStatus.textContent = `${manifest.forms.length} 份表單；可直接開啟填寫頁或展開 QR code。`;
+  el.formLinksPanel.hidden = false;
 }
 
 function getCounts(className, episodeId) {
@@ -412,16 +540,24 @@ function lookupClass(event) {
   selectClass(className);
 }
 
-async function unlock(event) {
-  event.preventDefault();
-  const password = el.passwordInput.value.normalize("NFKC").trim();
-  if (!password) return;
-  el.gateStatus.textContent = "驗證中…";
-  el.passwordInput.disabled = true;
+async function activate(password, restored = false) {
+  if (activating) return;
+  activating = true;
   const button = el.gateForm.querySelector("button");
+  el.gateStatus.textContent = restored ? "載入登入狀態…" : "驗證中…";
+  el.passwordInput.disabled = true;
   button.disabled = true;
   try {
     data = await decryptPayload(password);
+    formManifest = null;
+    if (!REVIEW_MODE) {
+      try {
+        formManifest = await decryptFormManifest(password);
+      } catch {
+        formManifest = null;
+      }
+    }
+    if (!restored) saveSessionPassword(password);
     el.passwordInput.value = "";
     el.gate.hidden = true;
     el.protectedContent.hidden = false;
@@ -432,6 +568,7 @@ async function unlock(event) {
       el.studentPanel.hidden = true;
       el.panel.hidden = true;
       el.issuePanel.hidden = true;
+      el.formLinksPanel.hidden = true;
       renderReview();
     } else {
       el.reviewPanel.hidden = true;
@@ -439,14 +576,38 @@ async function unlock(event) {
       el.classStatus.textContent = "請輸入班級號碼查看成績。";
       el.classInput.focus();
       renderIssues();
+      if (formManifest) {
+        const selected = REQUESTED_FORM_KEY ? formManifest.forms.find((form) => form.form_key === REQUESTED_FORM_KEY) : null;
+        const link = selected ? safeUrl(selected.fill_url) : null;
+        if (REQUESTED_FORM_KEY && link) {
+          window.location.replace(link);
+          return;
+        }
+        renderFormPortal(formManifest);
+        if (REQUESTED_FORM_KEY) el.formLinksStatus.textContent = "找不到指定表單，請從課堂表單入口選擇。";
+      } else {
+        el.formLinksPanel.hidden = false;
+        el.formLinksStatus.textContent = "表單入口暫時無法載入，請稍後再試。";
+      }
     }
   } catch {
-    el.gateStatus.textContent = "密碼不正確或資料無法解密。";
+    if (restored) clearSessionPassword();
+    el.gateStatus.textContent = restored ? "登入狀態已失效，請重新輸入密碼。" : "密碼不正確或資料無法解密。";
+    el.gate.hidden = false;
+    el.protectedContent.hidden = true;
     el.passwordInput.value = "";
     el.passwordInput.disabled = false;
     button.disabled = false;
     el.passwordInput.focus();
+  } finally {
+    activating = false;
   }
+}
+
+async function unlock(event) {
+  event.preventDefault();
+  const password = el.passwordInput.value.normalize("NFKC").trim();
+  if (password) await activate(password);
 }
 
 el.gateForm.addEventListener("submit", unlock);
@@ -454,3 +615,6 @@ el.classForm.addEventListener("submit", lookupClass);
 el.studentForm.addEventListener("submit", lookupStudent);
 el.episodeViewRecent.addEventListener("click", () => setEpisodeView("recent"));
 el.episodeViewAll.addEventListener("click", () => setEpisodeView("all"));
+
+const savedSessionPassword = readSessionPassword();
+if (savedSessionPassword) void activate(savedSessionPassword, true);
