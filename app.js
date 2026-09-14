@@ -4,6 +4,7 @@ const FORMS_DATA_URL = "forms/manifest.enc.json?v=20260913-1";
 const FORMS_DEFAULT_AAD = "xinghua-chemistry-forms-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
+const QR_ASSET_VERSION = "20260914-1";
 const REVIEW_MODE = new URLSearchParams(window.location.search).get("view") === "review";
 const REQUESTED_FORM_KEY = new URLSearchParams(window.location.search).get("form");
 
@@ -193,7 +194,7 @@ function renderFormLink(form) {
   if (qrPath) {
     const qr = document.createElement("img");
     qr.className = "form-link-qr";
-    qr.src = qrPath;
+    qr.src = `${qrPath}?v=${QR_ASSET_VERSION}`;
     qr.alt = `${form.label ?? form.form_key} 填寫表單 QR code`;
     qr.hidden = true;
     qr.loading = "lazy";
