@@ -17,11 +17,17 @@ for (const [index, video] of videos.entries()) {
 
 const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const appJs = fs.readFileSync(path.join(root, "app.js"), "utf8");
-for (const marker of ["id=\"video-panel\"", "id=\"video-controls\"", "id=\"video-frame-wrap\""]) {
-  if (!indexHtml.includes(marker)) throw new Error(`Missing UI marker: ${marker}`);
+const formsHtml = fs.readFileSync(path.join(root, "forms", "index.html"), "utf8");
+const formsJs = fs.readFileSync(path.join(root, "forms", "forms.js"), "utf8");
+for (const marker of ["課堂表單與影片", "href=\"forms/\""]) {
+  if (!indexHtml.includes(marker)) throw new Error(`Missing entry marker: ${marker}`);
 }
-for (const marker of ["const VIDEOS_URL", "async function loadVideos", "function renderVideo"]) {
-  if (!appJs.includes(marker)) throw new Error(`Missing app marker: ${marker}`);
+for (const marker of ["id=\"episode-picker\"", "id=\"episode-detail\"", "id=\"episode-forms\"", "id=\"video-frame-wrap\""]) {
+  if (!formsHtml.includes(marker)) throw new Error(`Missing form portal marker: ${marker}`);
 }
+for (const marker of ["const VIDEO_DATA_URL", "async function loadVideos", "function selectEpisode", "function renderVideo"]) {
+  if (!formsJs.includes(marker)) throw new Error(`Missing form portal marker: ${marker}`);
+}
+if (appJs.includes("id=\"video-panel\"") || appJs.includes("const VIDEOS_URL")) throw new Error("Video player must stay in the form portal");
 
 console.log(`Video playback check passed: ${videos.length} Drive videos, EP01–EP54.`);

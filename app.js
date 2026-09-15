@@ -1,5 +1,4 @@
 const DATA_URL = "data/grades.enc.json?v=20260913-1";
-const VIDEOS_URL = "data/videos.json?v=20260915-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -38,12 +37,6 @@ const el = {
   issuePanel: document.querySelector("#issue-panel"),
   issueSummary: document.querySelector("#issue-summary"),
   issueBody: document.querySelector("#issue-body"),
-  videoPanel: document.querySelector("#video-panel"),
-  videoStatus: document.querySelector("#video-status"),
-  videoControls: document.querySelector("#video-controls"),
-  videoFrameWrap: document.querySelector("#video-frame-wrap"),
-  videoCaption: document.querySelector("#video-caption"),
-  videoOpenLink: document.querySelector("#video-open-link"),
   reviewPanel: document.querySelector("#review-panel"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewBody: document.querySelector("#review-body"),
@@ -51,8 +44,6 @@ const el = {
 };
 
 let data;
-let videos = [];
-let currentVideoEpisode = null;
 let currentClassName = null;
 let episodeView = "recent";
 let activating = false;
@@ -189,84 +180,6 @@ function formatEpisodeRange(episodes) {
   if (!episodes.length) return "目前沒有 EP";
   if (episodes.length === 1) return episodes[0].label;
   return `${episodes[0].label}–${episodes.at(-1).label}`;
-}
-
-function normalizeVideoEntry(entry) {
-  const episode = Number(entry?.episode);
-  const fileId = String(entry?.file_id ?? "");
-  const title = String(entry?.title ?? "").trim();
-  const label = String(entry?.label ?? `EP${String(episode).padStart(2, "0")}`).trim();
-  const embedUrl = new URL(String(entry?.embed_url ?? ""));
-  if (!Number.isInteger(episode) || episode < 1 || !fileId || !title || !label) throw new Error("Invalid video entry");
-  if (!/^[A-Za-z0-9_-]+$/u.test(fileId)) throw new Error("Invalid Drive file id");
-  if (embedUrl.protocol !== "https:" || embedUrl.hostname !== "drive.google.com" || embedUrl.pathname !== `/file/d/${fileId}/preview` || embedUrl.search || embedUrl.hash) {
-    throw new Error("Invalid Drive preview URL");
-  }
-  return { episode, label, title, fileId, embedUrl: embedUrl.href };
-}
-
-function updateVideoControlState() {
-  for (const button of el.videoControls.querySelectorAll("button")) {
-    button.setAttribute("aria-pressed", String(Number(button.dataset.episode) === currentVideoEpisode));
-  }
-}
-
-function renderVideo(video) {
-  currentVideoEpisode = video.episode;
-  updateVideoControlState();
-  el.videoFrameWrap.replaceChildren();
-  const iframe = document.createElement("iframe");
-  iframe.src = video.embedUrl;
-  iframe.title = `${video.label}｜${video.title}`;
-  iframe.allow = "autoplay; fullscreen";
-  iframe.allowFullscreen = true;
-  iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  el.videoFrameWrap.append(iframe);
-  el.videoFrameWrap.hidden = false;
-  el.videoCaption.textContent = `${video.label}｜${video.title}`;
-  el.videoOpenLink.href = `https://drive.google.com/file/d/${video.fileId}/view`;
-  el.videoOpenLink.hidden = false;
-  el.videoStatus.textContent = `${video.label} 已開啟，學生可直接觀看。`;
-}
-
-function renderVideoControls() {
-  el.videoControls.replaceChildren();
-  for (const video of videos) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "video-episode-button";
-    button.dataset.episode = String(video.episode);
-    button.textContent = video.label;
-    button.title = video.title;
-    button.setAttribute("aria-pressed", String(video.episode === currentVideoEpisode));
-    button.addEventListener("click", () => renderVideo(video));
-    el.videoControls.append(button);
-  }
-}
-
-async function loadVideos() {
-  el.videoStatus.textContent = "讀取影片清單…";
-  try {
-    const response = await fetch(VIDEOS_URL, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const payload = await response.json();
-    const entries = Array.isArray(payload) ? payload : payload.videos;
-    const loadedVideos = entries.map(normalizeVideoEntry).sort((a, b) => a.episode - b.episode);
-    if (loadedVideos.length !== 54 || loadedVideos.some((video, index) => video.episode !== index + 1)) throw new Error("Expected EP01-EP54");
-    videos = loadedVideos;
-    renderVideoControls();
-    el.videoStatus.textContent = `已準備 ${videos.length} 支影片；由老師點選要播放的 EP。`;
-  } catch (error) {
-    console.error("Unable to load video manifest", error);
-    videos = [];
-    currentVideoEpisode = null;
-    el.videoControls.replaceChildren();
-    el.videoFrameWrap.replaceChildren();
-    el.videoFrameWrap.hidden = true;
-    el.videoOpenLink.hidden = true;
-    el.videoCaption.textContent = "目前無法讀取線上影片清單。";
-    el.videoStatus.textContent = "影片清單載入失敗，請重新整理頁面。";
-  }
 }
 
 function renderClassSummary(className, episodes) {
@@ -519,7 +432,6 @@ function selectClass(className) {
   currentClassName = className;
   renderClassView();
   el.panel.hidden = false;
-  el.videoPanel.hidden = false;
 }
 
 function setEpisodeView(view) {
@@ -538,13 +450,11 @@ function lookupClass(event) {
   el.classInput.value = className;
   if (!/^\d{3}$/u.test(className)) {
     el.panel.hidden = true;
-    el.videoPanel.hidden = true;
     el.classStatus.textContent = "請輸入三位數班級號碼。";
     return;
   }
   if (!data.classes.includes(className)) {
     el.panel.hidden = true;
-    el.videoPanel.hidden = true;
     el.classStatus.textContent = "查無此班級成績，請確認班級號碼。";
     return;
   }
@@ -572,12 +482,9 @@ async function activate(password, restored = false) {
       el.studentPanel.hidden = true;
       el.panel.hidden = true;
       el.issuePanel.hidden = true;
-      el.videoPanel.hidden = true;
       renderReview();
     } else {
       el.reviewPanel.hidden = true;
-      el.videoPanel.hidden = true;
-      void loadVideos();
       updateEpisodeViewControls();
       el.classStatus.textContent = "請輸入班級號碼查看成績。";
       el.classInput.focus();

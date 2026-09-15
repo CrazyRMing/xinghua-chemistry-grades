@@ -4,14 +4,63 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <title>技高化學｜課堂入口</title>
+    <title>技高化學｜課堂表單與影片</title>
+    <link rel="stylesheet" href="forms.css?v=20260915-2">
   </head>
   <body>
-    <p>正在開啟受密碼保護的成績與課堂表單入口…</p>
-    <p><a href="../">前往課堂入口</a></p>
-    <script>
-      const key = new URLSearchParams(location.search).get("key");
-      location.replace(key ? `../?form=${encodeURIComponent(key)}` : "../");
-    </script>
+    <main>
+      <p class="eyebrow">115 學年度上學期 · 技高化學</p>
+      <h1>課堂表單與影片</h1>
+      <p class="intro">輸入課堂密碼後，點選對應 EP；同一頁會顯示該 EP 的 Google 表單 QR code 與原始線上影片。</p>
+      <section id="access-gate" class="access-gate" aria-labelledby="gate-title">
+        <p class="section-kicker">ACCESS</p>
+        <h2 id="gate-title">輸入密碼查看課堂內容</h2>
+        <p>密碼正確後才載入 EP 選擇、表單 QR code 與影片。</p>
+        <form id="gate-form" method="post" autocomplete="off">
+          <label for="password-input">課堂密碼</label>
+          <div class="gate-form-row">
+            <input id="password-input" name="password" type="password" autocomplete="off" required>
+            <button type="submit">查看課堂內容</button>
+          </div>
+        </form>
+        <p id="gate-status" class="gate-status" role="status" aria-live="polite"></p>
+      </section>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="episode-picker" class="episode-picker" aria-labelledby="episode-picker-title" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">EPISODE</p>
+            <h2 id="episode-picker-title">選擇對應 EP</h2>
+          </div>
+          <p class="data-status">點選後顯示該 EP 的表單與影片</p>
+        </div>
+        <div id="episode-buttons" class="episode-buttons" role="group" aria-label="選擇 EP"></div>
+      </section>
+
+      <section id="episode-detail" class="episode-detail" aria-live="polite" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">SELECTED EP</p>
+            <h2 id="episode-title">—</h2>
+          </div>
+          <p id="episode-summary" class="data-status">—</p>
+        </div>
+        <div class="episode-layout">
+          <div class="episode-forms-column">
+            <h3>Google 表單 QR code</h3>
+            <div id="episode-forms" class="episode-forms"></div>
+          </div>
+          <div class="episode-video-column">
+            <h3>EP 影片</h3>
+            <div id="video-frame-wrap" class="video-frame-wrap" hidden></div>
+            <p id="video-caption" class="video-caption">—</p>
+            <a id="video-open-link" class="video-link" href="#" target="_blank" rel="noopener" hidden>在 Google Drive 開啟原始影片</a>
+          </div>
+        </div>
+      </section>
+
+      <p><a href="../">返回成績顯示頁面</a></p>
+    </main>
+    <script type="module" src="forms.js?v=20260915-2"></script>
   </body>
 </html>
