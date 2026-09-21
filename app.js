@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260918-1";
+const DATA_URL = "data/grades.enc.json?v=20260921-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -226,6 +226,8 @@ function renderHeader() {
 
 const reviewCategoryLabels = {
   class_or_seat_mismatch: "班級或座號與名單不同",
+  name_field_mismatch: "姓名欄誤填座號或其他資料",
+  manual_score_correction: "人工核訂發布分數",
   name_mismatch: "姓名無法對上名單",
   invalid_response: "回覆資料不完整",
   duplicate_submission: "同一 EP 重複送出"
@@ -306,6 +308,14 @@ function parseAttemptTimestamp(value) {
 }
 
 function getPublishedResult(entry) {
+  const overrideScore = parseScore(entry?.published_override?.score);
+  if (overrideScore !== null) {
+    return {
+      score: overrideScore,
+      submittedAt: entry.published_override.submitted_at ?? getAttemptTime(entry),
+      submittedAtValue: parseAttemptTimestamp(entry.published_override.submitted_at)
+    };
+  }
   const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
   let selected = null;
   for (const attempt of attempts) {
