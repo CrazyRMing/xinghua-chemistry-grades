@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260921-3";
+const DATA_URL = "data/grades.enc.json?v=20260925-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
