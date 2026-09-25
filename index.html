@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css?v=20260925-2">
-    <script type="module" src="app.js?v=20260925-2"></script>
+    <link rel="stylesheet" href="styles.css?v=20260925-3">
+    <script type="module" src="app.js?v=20260925-3"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -160,7 +160,17 @@
               </div>
               <p id="review-summary" class="data-status">—</p>
             </div>
-            <p class="review-intro">這裡顯示表單實際填入的班級、座號、姓名、分數與送出時間；正式成績仍以姓名配對後的最高分為準。</p>
+            <p class="review-intro">這裡顯示表單實際填入的班級、座號、姓名、分數與送出時間；可在課堂確認後保存判斷，最後複製或下載 JSON 傳回 Codex。正式成績仍以姓名配對後的最高分為準。</p>
+            <div class="review-tools">
+              <p id="review-decision-count" class="review-decision-count">已判斷 0 筆</p>
+              <div class="review-export-actions">
+                <button id="review-copy-json" class="review-action-button" type="button">複製待匯入 JSON</button>
+                <button id="review-download-json" class="review-action-button review-action-button--secondary" type="button">下載待匯入 JSON</button>
+              </div>
+            </div>
+            <p id="review-storage-status" class="review-storage-status" role="status" aria-live="polite"></p>
+            <p id="review-feedback" class="review-feedback" role="status" aria-live="polite"></p>
+            <div id="review-cards" class="review-cards" aria-live="polite"></div>
             <div class="review-table-frame">
               <table>
                 <thead>

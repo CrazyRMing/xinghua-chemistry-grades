@@ -3,6 +3,8 @@ const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
 const REVIEW_MODE = new URLSearchParams(window.location.search).get("view") === "review";
+const REVIEW_DECISION_STORAGE_KEY = "xinghua-chemistry-review-decisions-v1";
+const REVIEW_DECISION_SCHEMA_VERSION = "review-decisions-v1";
 
 const el = {
   title: document.querySelector("#page-title"),
@@ -41,6 +43,12 @@ const el = {
   reviewAlert: document.querySelector("#review-alert"),
   reviewAlertCount: document.querySelector("#review-alert-count"),
   reviewAlertList: document.querySelector("#review-alert-list"),
+  reviewDecisionCount: document.querySelector("#review-decision-count"),
+  reviewStorageStatus: document.querySelector("#review-storage-status"),
+  reviewFeedback: document.querySelector("#review-feedback"),
+  reviewCopyJson: document.querySelector("#review-copy-json"),
+  reviewDownloadJson: document.querySelector("#review-download-json"),
+  reviewCards: document.querySelector("#review-cards"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewBody: document.querySelector("#review-body"),
   updatedAt: document.querySelector("#updated-at")
@@ -50,6 +58,13 @@ let data;
 let currentClassName = null;
 let episodeView = "recent";
 let activating = false;
+let reviewDecisionStore = {
+  schema_version: REVIEW_DECISION_SCHEMA_VERSION,
+  project: "xinghua-chemistry-grades",
+  source_updated_at: null,
+  decisions: {}
+};
+let reviewDecisionStoreLoaded = false;
 
 const RECENT_EPISODE_COUNT = 6;
 
@@ -256,9 +271,302 @@ function formatReviewMatch(item) {
   return `名單：${item.roster_class} 班 ${item.roster_seat} 號 ${item.matched_name}`;
 }
 
+function reviewDecisionKey(submission) {
+  return [submission.episode, submission.form_key, submission.source_row, submission.submitted_at]
+    .map((value) => String(value ?? ""))
+    .join("|");
+}
+
+function getReviewDecision(submission) {
+  return reviewDecisionStore.decisions[reviewDecisionKey(submission)] ?? null;
+}
+
+function loadReviewDecisionStore() {
+  if (reviewDecisionStoreLoaded) return;
+  reviewDecisionStoreLoaded = true;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(REVIEW_DECISION_STORAGE_KEY) || "null");
+    if (parsed && (parsed.schema_version === REVIEW_DECISION_SCHEMA_VERSION || parsed.schema_version === 1) && parsed.decisions && typeof parsed.decisions === "object") {
+      reviewDecisionStore = {
+        schema_version: REVIEW_DECISION_SCHEMA_VERSION,
+        project: "xinghua-chemistry-grades",
+        source_updated_at: parsed.source_updated_at ?? null,
+        decisions: parsed.decisions
+      };
+    }
+    el.reviewStorageStatus.textContent = "判斷紀錄會保存在此瀏覽器；課堂結束後請複製或下載 JSON 傳回 Codex。";
+  } catch {
+    el.reviewStorageStatus.textContent = "此瀏覽器無法保存判斷紀錄；每筆判斷後請立即下載 JSON。";
+  }
+}
+
+function saveReviewDecisionStore() {
+  reviewDecisionStore.source_updated_at = data.updated_at ?? null;
+  try {
+    localStorage.setItem(REVIEW_DECISION_STORAGE_KEY, JSON.stringify(reviewDecisionStore));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateReviewDecision(form) {
+  const verdict = form.elements.verdict.value;
+  if (verdict !== "confirmed" && verdict !== "unresolved") {
+    return { ok: false, message: "請先選擇核對結果。" };
+  }
+  if (verdict === "unresolved") {
+    return {
+      ok: true,
+      verdict,
+      confirmed_class: null,
+      confirmed_seat: null,
+      confirmed_name: null,
+      note: form.elements.note.value.trim()
+    };
+  }
+
+  const confirmedClass = form.elements.confirmed_class.value.trim();
+  const confirmedSeat = form.elements.confirmed_seat.value.trim();
+  const confirmedName = form.elements.confirmed_name.value.trim();
+  if (!/^\d{3}$/u.test(confirmedClass)) {
+    return { ok: false, message: "確認後班級必須是 3 位數字。" };
+  }
+  if (!/^\d{1,2}$/u.test(confirmedSeat)) {
+    return { ok: false, message: "確認後座號只能是 1～2 位數字。" };
+  }
+  if (!confirmedName) {
+    return { ok: false, message: "請填寫確認後姓名。" };
+  }
+  if (/\p{N}/u.test(confirmedName)) {
+    return { ok: false, message: "確認後姓名不可含數字，請輸入中文姓名。" };
+  }
+  return {
+    ok: true,
+    verdict,
+    confirmed_class: confirmedClass,
+    confirmed_seat: confirmedSeat.padStart(2, "0"),
+    confirmed_name: confirmedName,
+    note: form.elements.note.value.trim()
+  };
+}
+
+function makeReviewDecision(submission, fields) {
+  return {
+    decision_id: reviewDecisionKey(submission),
+    verdict: fields.verdict,
+    episode: submission.episode ?? null,
+    form_key: submission.form_key ?? null,
+    source_row: submission.source_row ?? null,
+    submitted_at: submission.submitted_at ?? null,
+    input_class: submission.input_class ?? null,
+    input_seat: submission.input_seat ?? null,
+    input_name: submission.input_name ?? null,
+    score: submission.score ?? null,
+    score_max: submission.score_max ?? null,
+    category: submission.category ?? null,
+    categories: Array.isArray(submission.categories) ? [...submission.categories] : getReviewCategories(submission),
+    confirmed_class: fields.confirmed_class,
+    confirmed_seat: fields.confirmed_seat,
+    confirmed_name: fields.confirmed_name,
+    note: fields.note,
+    judged_at: new Date().toISOString()
+  };
+}
+
+function buildReviewDecisionExport(submissions) {
+  const currentKeys = new Set(submissions.map(reviewDecisionKey));
+  const decisions = Object.values(reviewDecisionStore.decisions)
+    .filter((decision) => currentKeys.has(decision.decision_id))
+    .sort((a, b) => String(a.decision_id).localeCompare(String(b.decision_id)));
+  return {
+    schema_version: REVIEW_DECISION_SCHEMA_VERSION,
+    project: "xinghua-chemistry-grades",
+    exported_at: new Date().toISOString(),
+    source_updated_at: data.updated_at ?? null,
+    decisions
+  };
+}
+
+function setReviewFeedback(message, kind = "") {
+  el.reviewFeedback.textContent = message;
+  el.reviewFeedback.className = `review-feedback${kind ? ` review-feedback--${kind}` : ""}`;
+}
+
+function createReviewField(labelText, name, value, type = "text") {
+  const label = document.createElement("label");
+  label.className = "review-field";
+  appendText(label, "span", labelText, "review-field__label");
+  const input = document.createElement("input");
+  input.type = type;
+  input.name = name;
+  input.value = value ?? "";
+  input.autocomplete = "off";
+  if (name === "confirmed_class" || name === "confirmed_seat") {
+    input.inputMode = "numeric";
+    input.pattern = "[0-9]*";
+  }
+  label.append(input);
+  return label;
+}
+
+function syncReviewCardFields(form) {
+  const confirmedFields = form.querySelector("[data-confirmed-fields]");
+  const confirmed = form.elements.verdict.value === "confirmed";
+  confirmedFields.hidden = !confirmed;
+  for (const field of confirmedFields.querySelectorAll("input")) field.disabled = !confirmed;
+}
+
+function renderReviewDecisionCards(submissions, formLabels) {
+  el.reviewCards.replaceChildren();
+  if (!submissions.length) {
+    appendText(el.reviewCards, "p", "目前沒有可核對的回覆。", "empty-state");
+    el.reviewDecisionCount.textContent = "已判斷 0 / 0 筆";
+    return;
+  }
+  let decidedCount = 0;
+  for (const submission of submissions) {
+    const decision = getReviewDecision(submission);
+    if (decision) decidedCount += 1;
+    const card = document.createElement("article");
+    card.className = `review-card${decision ? ` review-card--${decision.verdict}` : ""}`;
+    const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
+    appendText(card, "h3", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-card__title");
+    appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(submission.submitted_at) || "—"}`, "review-card__original");
+    const form = document.createElement("form");
+    form.className = "review-card__form";
+    form.noValidate = true;
+    form.dataset.reviewKey = reviewDecisionKey(submission);
+
+    const verdictLabel = document.createElement("label");
+    verdictLabel.className = "review-field";
+    appendText(verdictLabel, "span", "教師判斷", "review-field__label");
+    const verdict = document.createElement("select");
+    verdict.name = "verdict";
+    verdict.required = true;
+    for (const [value, text] of [["", "請選擇"], ["confirmed", "確認身分，可補登"], ["unresolved", "暫不確認，維持待核對"]]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = text;
+      verdictLabel.append(option);
+    }
+    verdict.value = decision?.verdict ?? "";
+    verdictLabel.append(verdict);
+    form.append(verdictLabel);
+
+    const confirmedFields = document.createElement("div");
+    confirmedFields.className = "review-card__confirmed-fields";
+    confirmedFields.dataset.confirmedFields = "true";
+    confirmedFields.append(
+      createReviewField("確認後班級（3 位數字）", "confirmed_class", decision?.confirmed_class),
+      createReviewField("確認後座號（數字）", "confirmed_seat", decision?.confirmed_seat),
+      createReviewField("確認後姓名（不可含數字）", "confirmed_name", decision?.confirmed_name)
+    );
+    form.append(confirmedFields);
+
+    const noteLabel = document.createElement("label");
+    noteLabel.className = "review-field review-field--full";
+    appendText(noteLabel, "span", "課堂備註（選填）", "review-field__label");
+    const note = document.createElement("textarea");
+    note.name = "note";
+    note.rows = 2;
+    note.value = decision?.note ?? "";
+    note.placeholder = "例如：學生當場確認為 506 班 07 號。";
+    noteLabel.append(note);
+    form.append(noteLabel);
+
+    const formActions = document.createElement("div");
+    formActions.className = "review-card__actions";
+    const saveButton = document.createElement("button");
+    saveButton.type = "submit";
+    saveButton.className = "review-action-button";
+    saveButton.textContent = decision ? "更新判斷紀錄" : "保存此筆判斷";
+    formActions.append(saveButton);
+    const status = appendText(formActions, "span", decision ? `已${decision.verdict === "confirmed" ? "確認" : "暫不確認"}｜${decision.judged_at}` : "尚未判斷", "review-card__status");
+    status.dataset.reviewStatus = "true";
+    form.append(formActions);
+    card.append(form);
+    el.reviewCards.append(card);
+    syncReviewCardFields(form);
+  }
+  el.reviewDecisionCount.textContent = `已判斷 ${decidedCount} / ${submissions.length} 筆`;
+}
+
+function findReviewSubmission(key) {
+  return (data.review_submissions ?? []).find((submission) => reviewDecisionKey(submission) === key) ?? null;
+}
+
+function handleReviewDecisionSubmit(event) {
+  event.preventDefault();
+  const form = event.target.closest("form[data-review-key]");
+  if (!form) return;
+  const submission = findReviewSubmission(form.dataset.reviewKey);
+  if (!submission) {
+    setReviewFeedback("找不到這筆原始回覆，請重新載入頁面。", "error");
+    return;
+  }
+  const fields = validateReviewDecision(form);
+  if (!fields.ok) {
+    setReviewFeedback(fields.message, "error");
+    form.querySelector("[data-review-status]").textContent = fields.message;
+    return;
+  }
+  reviewDecisionStore.decisions[reviewDecisionKey(submission)] = makeReviewDecision(submission, fields);
+  const persisted = saveReviewDecisionStore();
+  renderReview();
+  setReviewFeedback(persisted ? "判斷已保存；課堂結束後請複製或下載 JSON 傳回 Codex。" : "判斷已暫存在本頁，但瀏覽器未能保存；請立即下載 JSON。", persisted ? "success" : "error");
+}
+
+function handleReviewCardChange(event) {
+  const select = event.target.closest("select[name=verdict]");
+  if (select) syncReviewCardFields(select.form);
+}
+
+function getReviewDecisionText(submissions) {
+  return JSON.stringify(buildReviewDecisionExport(submissions), null, 2);
+}
+
+async function copyReviewDecisions() {
+  const json = getReviewDecisionText(data.review_submissions ?? []);
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+    await navigator.clipboard.writeText(json);
+    setReviewFeedback("已複製待匯入 JSON，請直接貼回 Codex。", "success");
+  } catch {
+    const fallback = document.createElement("textarea");
+    fallback.value = json;
+    fallback.setAttribute("readonly", "true");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.append(fallback);
+    fallback.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch {}
+    fallback.remove();
+    setReviewFeedback(copied ? "已複製待匯入 JSON，請直接貼回 Codex。" : "無法直接複製；請改用下載待匯入 JSON。", copied ? "success" : "error");
+  }
+}
+
+function downloadReviewDecisions() {
+  try {
+    const json = getReviewDecisionText(data.review_submissions ?? []);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `xinghua-chemistry-review-decisions-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    setReviewFeedback("已下載待匯入 JSON，請將檔案提供給 Codex。", "success");
+  } catch {
+    setReviewFeedback("下載失敗；請改用複製待匯入 JSON。", "error");
+  }
+}
+
 function renderReview() {
   const submissions = Array.isArray(data.review_submissions) ? data.review_submissions : [];
   const formLabels = new Map((data.forms ?? []).map((form) => [form.form_key, form.label ?? form.form_key]));
+  loadReviewDecisionStore();
   const nameMismatches = submissions.filter(isNameMismatch);
   el.reviewPanel.hidden = false;
   el.reviewSummary.textContent = submissions.length ? `${submissions.length} 筆需要核對` : "目前沒有需要核對的回覆";
@@ -280,6 +588,7 @@ function renderReview() {
       el.reviewAlertList.append(item);
     }
   }
+  renderReviewDecisionCards(submissions, formLabels);
   el.reviewBody.replaceChildren();
   if (!submissions.length) {
     const row = document.createElement("tr");
@@ -558,6 +867,10 @@ el.classForm.addEventListener("submit", lookupClass);
 el.studentForm.addEventListener("submit", lookupStudent);
 el.episodeViewRecent.addEventListener("click", () => setEpisodeView("recent"));
 el.episodeViewAll.addEventListener("click", () => setEpisodeView("all"));
+el.reviewCards.addEventListener("submit", handleReviewDecisionSubmit);
+el.reviewCards.addEventListener("change", handleReviewCardChange);
+el.reviewCopyJson.addEventListener("click", () => void copyReviewDecisions());
+el.reviewDownloadJson.addEventListener("click", downloadReviewDecisions);
 
 const savedSessionPassword = readSessionPassword();
 if (savedSessionPassword) void activate(savedSessionPassword, true);
