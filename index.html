@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css?v=20260915-7">
-    <script type="module" src="app.js?v=20260915-7"></script>
+    <link rel="stylesheet" href="styles.css?v=20260925-2">
+    <script type="module" src="app.js?v=20260925-2"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -144,6 +144,15 @@
           </section>
 
           <section id="review-panel" class="review-panel" aria-labelledby="review-title" hidden>
+            <div id="review-alert" class="review-alert" role="alert" aria-labelledby="review-alert-title" hidden>
+              <div class="review-alert__heading">
+                <span class="review-alert__icon" aria-hidden="true">⚠️</span>
+                <h3 id="review-alert-title">姓名填寫錯誤，未列入正式成績</h3>
+              </div>
+              <p id="review-alert-count" class="review-alert__count">—</p>
+              <p class="review-alert__description">以下回覆無法對應名單，沒有正式成績，請教師重新核對／補填。</p>
+              <ul id="review-alert-list" class="review-alert__list"></ul>
+            </div>
             <div class="section-heading">
               <div>
                 <p class="section-kicker">REVIEW</p>

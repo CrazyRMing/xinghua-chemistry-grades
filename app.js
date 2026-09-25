@@ -38,6 +38,9 @@ const el = {
   issueSummary: document.querySelector("#issue-summary"),
   issueBody: document.querySelector("#issue-body"),
   reviewPanel: document.querySelector("#review-panel"),
+  reviewAlert: document.querySelector("#review-alert"),
+  reviewAlertCount: document.querySelector("#review-alert-count"),
+  reviewAlertList: document.querySelector("#review-alert-list"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewBody: document.querySelector("#review-body"),
   updatedAt: document.querySelector("#updated-at")
@@ -228,13 +231,23 @@ const reviewCategoryLabels = {
   class_or_seat_mismatch: "班級或座號與名單不同",
   name_field_mismatch: "姓名欄誤填座號或其他資料",
   manual_score_correction: "人工核訂發布分數",
-  name_mismatch: "姓名無法對上名單",
+  name_mismatch: "⚠️ 姓名填寫錯誤：無法對上名單，未列入正式成績",
   invalid_response: "回覆資料不完整",
   duplicate_submission: "同一 EP 重複送出"
 };
 
+function getReviewCategories(item) {
+  const categories = item.categories ?? item.category;
+  if (!Array.isArray(categories)) return categories ? [categories] : [];
+  return categories.filter(Boolean);
+}
+
+function isNameMismatch(item) {
+  return getReviewCategories(item).includes("name_mismatch");
+}
+
 function formatReviewReason(item) {
-  const categories = item.categories ?? [item.category];
+  const categories = getReviewCategories(item);
   return categories.map((category) => reviewCategoryLabels[category] ?? category).join("、");
 }
 
@@ -246,8 +259,27 @@ function formatReviewMatch(item) {
 function renderReview() {
   const submissions = Array.isArray(data.review_submissions) ? data.review_submissions : [];
   const formLabels = new Map((data.forms ?? []).map((form) => [form.form_key, form.label ?? form.form_key]));
+  const nameMismatches = submissions.filter(isNameMismatch);
   el.reviewPanel.hidden = false;
   el.reviewSummary.textContent = submissions.length ? `${submissions.length} 筆需要核對` : "目前沒有需要核對的回覆";
+  el.reviewAlert.hidden = nameMismatches.length === 0;
+  el.reviewAlertList.replaceChildren();
+  if (nameMismatches.length) {
+    el.reviewAlertCount.textContent = `共 ${nameMismatches.length} 筆姓名填寫錯誤的回覆`;
+    for (const submission of nameMismatches) {
+      const item = document.createElement("li");
+      item.className = "review-alert__item";
+      const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
+      appendText(item, "strong", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-alert__item-title");
+      appendText(
+        item,
+        "span",
+        `填入班級：${submission.input_class ?? "—"}｜填入姓名：${submission.input_name ?? "—"}｜送出時間：${formatSubmittedAt(submission.submitted_at) || "—"}`,
+        "review-alert__item-detail"
+      );
+      el.reviewAlertList.append(item);
+    }
+  }
   el.reviewBody.replaceChildren();
   if (!submissions.length) {
     const row = document.createElement("tr");
@@ -265,7 +297,8 @@ function renderReview() {
     appendText(row, "td", submission.input_name ?? "—", "student-name");
     appendText(row, "td", submission.score === null || submission.score === undefined ? "—" : `${submission.score}/${submission.score_max ?? 100}`);
     appendText(row, "td", formatReviewMatch(submission));
-    appendText(row, "td", formatReviewReason(submission));
+    const reasonCell = appendText(row, "td", formatReviewReason(submission));
+    if (isNameMismatch(submission)) reasonCell.classList.add("review-reason--name-mismatch");
     el.reviewBody.append(row);
   }
 }
@@ -494,12 +527,12 @@ async function activate(password, restored = false) {
       el.issuePanel.hidden = true;
       renderReview();
     } else {
-      el.reviewPanel.hidden = true;
-      updateEpisodeViewControls();
-      el.classStatus.textContent = "請輸入班級號碼查看成績。";
-      el.classInput.focus();
-      renderIssues();
-    }
+    el.reviewPanel.hidden = true;
+    updateEpisodeViewControls();
+    el.classStatus.textContent = "請輸入班級號碼查看成績。";
+    el.classInput.focus();
+    el.issuePanel.hidden = true;
+  }
   } catch {
     if (restored) clearSessionPassword();
     el.gateStatus.textContent = restored ? "登入狀態已失效，請重新輸入密碼。" : "密碼不正確或資料無法解密。";

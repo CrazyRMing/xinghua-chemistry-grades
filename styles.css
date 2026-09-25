@@ -122,6 +122,18 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .review-table-frame { overflow-x: auto; border: 1px solid #e2c585; border-radius: .75rem; }
 .review-table-frame table { min-width: 1180px; }
 .review-table-frame th { background: var(--warning-soft); }
+.review-alert { margin-bottom: 1.35rem; padding: 1.15rem 1.2rem 1.25rem; border: 3px solid #b42318; border-radius: .9rem; background: #fff1f0; color: #5f1711; box-shadow: 0 8px 18px rgba(180, 35, 24, .15); }
+.review-alert__heading { display: flex; align-items: center; gap: .65rem; }
+.review-alert__icon { flex: 0 0 auto; font-size: 1.6rem; line-height: 1; }
+.review-alert h3 { margin: 0; color: #8e1c13; font-size: clamp(1.25rem, 3vw, 1.7rem); line-height: 1.25; }
+.review-alert__count { display: inline-block; margin: .8rem 0 .45rem; padding: .3rem .7rem; border-radius: 999px; background: #b42318; color: white; font-weight: 800; }
+.review-alert__description { margin-bottom: .85rem; font-weight: 800; }
+.review-alert__list { display: grid; gap: .55rem; margin: 0; padding-left: 1.35rem; }
+.review-alert__item { padding: .65rem .75rem; border: 1px solid #eeaaa4; border-radius: .55rem; background: white; }
+.review-alert__item-title, .review-alert__item-detail { display: block; }
+.review-alert__item-title { color: var(--ink); }
+.review-alert__item-detail { color: #5d3a37; font-size: .95rem; overflow-wrap: anywhere; }
+.review-reason--name-mismatch { color: #8e1c13; font-weight: 800; }
 
 .class-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
 .class-tab {
@@ -184,6 +196,7 @@ footer { display: flex; justify-content: space-between; gap: 1rem; width: min(11
 
 @media (max-width: 720px) {
   .heading-row, .section-heading, .class-panel__head, footer { align-items: flex-start; flex-direction: column; }
+  .review-alert__heading { align-items: flex-start; }
   .class-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .class-summary { width: 100%; grid-template-columns: repeat(2, minmax(8rem, 1fr)); }
   .gate-form-row, .class-form-row { flex-direction: column; }
