@@ -75,6 +75,10 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .class-picker, .student-picker, .student-panel, .class-panel, .issue-panel, .form-links-panel, .review-panel { margin-bottom: 1.25rem; padding: clamp(1.2rem, 3vw, 2rem); background: var(--panel); border: 1px solid var(--line); border-radius: 1.1rem; box-shadow: 0 12px 28px rgba(16, 35, 51, .06); }
 .section-heading { align-items: center; margin-bottom: 1.2rem; }
 .data-status { margin: 0; color: var(--muted); font-size: .95rem; }
+.review-reminder { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .8rem; margin: -0.35rem 0 1.1rem; padding: .85rem 1rem; border: 2px solid #b42318; border-radius: .75rem; background: #fff1f0; color: #5f1711; }
+.review-reminder[hidden] { display: none; }
+.review-reminder strong { color: #8e1c13; }
+.review-reminder a { color: #7a170f; font-weight: 800; }
 
 .class-form { max-width: 38rem; }
 .class-form label { display: block; margin-bottom: .35rem; font-weight: 800; }
@@ -134,6 +138,10 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .review-alert__item-title { color: var(--ink); }
 .review-alert__item-detail { color: #5d3a37; font-size: .95rem; overflow-wrap: anywhere; }
 .review-reason--name-mismatch { color: #8e1c13; font-weight: 800; }
+.review-alert__item--temporal-warning { border: 2px solid #b42318; background: #fff1f0; }
+.review-alert__item--temporal-warning .review-alert__item-detail,
+.review-reason--temporal-warning { color: #8e1c13; font-weight: 900; }
+.review-card--temporal-warning { border-color: #b42318; box-shadow: 0 0 0 3px rgba(180, 35, 24, .12); }
 .review-tools { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; padding: .85rem 1rem; border: 1px solid #e2c585; border-radius: .75rem; background: #fffdf7; }
 .review-decision-count { margin: 0; color: var(--ink); font-weight: 800; }
 .review-export-actions, .review-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }

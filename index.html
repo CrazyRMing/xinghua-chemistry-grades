@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css?v=20260925-3">
-    <script type="module" src="app.js?v=20260925-3"></script>
+    <link rel="stylesheet" href="styles.css?v=20261001-timegate-1">
+    <script type="module" src="app.js?v=20261001-timegate-1"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -50,6 +50,11 @@
               </div>
               <p id="data-status" class="data-status" role="status">資料讀取中…</p>
             </div>
+            <p id="review-reminder" class="review-reminder" role="alert" hidden>
+              <strong>⚠️ 待核對資料：<span id="review-reminder-count">0</span> 筆</strong>
+              <span>尚未列入正式成績。</span>
+              <a href="?view=review">前往回覆核對頁</a>
+            </p>
             <form id="class-form" class="class-form" autocomplete="off">
               <label for="class-input">班級號碼</label>
               <div class="class-form-row">
@@ -92,9 +97,9 @@
             </div>
             <div class="student-table-frame">
               <table class="student-score-table">
-                <caption>各 EP 最高分與送出時間</caption>
+                <caption>各 EP 正式選取分數與送出時間</caption>
                 <thead>
-                  <tr><th>EP</th><th>最高分／送出時間</th></tr>
+                  <tr><th>EP</th><th>正式分數／送出時間</th></tr>
                 </thead>
                 <tbody id="student-body"></tbody>
               </table>
@@ -125,7 +130,7 @@
                 <tbody id="score-body"></tbody>
               </table>
             </div>
-            <p class="table-note">「—」表示目前尚無回覆；每個 EP 顯示最高分，並顯示該最高分回覆的送出時間。</p>
+            <p class="table-note">「—」表示目前尚無回覆；每個 EP 顯示正式選取分數，並顯示該回覆的送出時間。</p>
           </section>
 
           <section id="issue-panel" class="issue-panel" hidden>
@@ -147,10 +152,10 @@
             <div id="review-alert" class="review-alert" role="alert" aria-labelledby="review-alert-title" hidden>
               <div class="review-alert__heading">
                 <span class="review-alert__icon" aria-hidden="true">⚠️</span>
-                <h3 id="review-alert-title">姓名填寫錯誤，未列入正式成績</h3>
+                <h3 id="review-alert-title">待核對資料，未列入正式成績</h3>
               </div>
               <p id="review-alert-count" class="review-alert__count">—</p>
-              <p class="review-alert__description">以下回覆無法對應名單，沒有正式成績，請教師重新核對／補填。</p>
+              <p class="review-alert__description">以下回覆需要教師核對；時間超出上課時段或日期與班上多數不同者會以紅色標示，且不列入正式成績。</p>
               <ul id="review-alert-list" class="review-alert__list"></ul>
             </div>
             <div class="section-heading">
@@ -160,7 +165,7 @@
               </div>
               <p id="review-summary" class="data-status">—</p>
             </div>
-            <p class="review-intro">這裡顯示表單實際填入的班級、座號、姓名、分數與送出時間；可在課堂確認後保存判斷，最後複製或下載 JSON 傳回 Codex。正式成績仍以姓名配對後的最高分為準。</p>
+            <p class="review-intro">這裡顯示表單實際填入的班級、座號、姓名、分數與送出時間；可在課堂確認身分後保存判斷，最後複製或下載 JSON 傳回 Codex。紅色的時間／日期異常回覆固定不予採計，不能補登。</p>
             <div class="review-tools">
               <p id="review-decision-count" class="review-decision-count">已判斷 0 筆</p>
               <div class="review-export-actions">

@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20260925-1";
+const DATA_URL = "data/grades.enc.json?v=20261001-timegate-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -18,6 +18,8 @@ const el = {
   classForm: document.querySelector("#class-form"),
   classInput: document.querySelector("#class-input"),
   classStatus: document.querySelector("#class-status"),
+  reviewReminder: document.querySelector("#review-reminder"),
+  reviewReminderCount: document.querySelector("#review-reminder-count"),
   studentPicker: document.querySelector("#student-picker"),
   studentForm: document.querySelector("#student-form"),
   studentClassInput: document.querySelector("#student-class-input"),
@@ -238,7 +240,10 @@ function renderHeader() {
   el.title.textContent = REVIEW_MODE ? "回覆核對紀錄" : data.title;
   el.subtitle.textContent = REVIEW_MODE ? "查看需要核對的表單回覆。" : "輸入班級號碼，查看本班各 EP 成績。";
   const availableEpisodes = getAvailableEpisodes();
-  el.status.textContent = REVIEW_MODE ? `${data.review_submissions?.length ?? 0} 筆回覆需要核對` : `${availableEpisodes.length} 個 EP 已有成績 · 請輸入班級號碼查看成績`;
+  const reviewCount = Array.isArray(data.review_submissions) ? data.review_submissions.length : 0;
+  el.status.textContent = REVIEW_MODE ? `${reviewCount} 筆回覆需要核對` : `${availableEpisodes.length} 個 EP 已有成績 · 請輸入班級號碼查看成績`;
+  el.reviewReminder.hidden = REVIEW_MODE || reviewCount === 0;
+  el.reviewReminderCount.textContent = String(reviewCount);
   el.updatedAt.textContent = `更新日期：${data.updated_at}`;
 }
 
@@ -247,8 +252,11 @@ const reviewCategoryLabels = {
   name_field_mismatch: "姓名欄誤填座號或其他資料",
   manual_score_correction: "人工核訂發布分數",
   name_mismatch: "⚠️ 姓名填寫錯誤：無法對上名單，未列入正式成績",
+  possible_name_seat_swap: "疑似姓名欄與座號欄互填",
   invalid_response: "回覆資料不完整",
-  duplicate_submission: "同一 EP 重複送出"
+  duplicate_submission: "同一 EP 重複送出",
+  outside_class_window: "⚠️ 送出時間超出該班上課時段：不予採計",
+  date_mismatch: "⚠️ 送出日期與班上多數日期不同：不予採計"
 };
 
 function getReviewCategories(item) {
@@ -261,12 +269,19 @@ function isNameMismatch(item) {
   return getReviewCategories(item).includes("name_mismatch");
 }
 
+function isTemporalMismatch(item) {
+  const categories = getReviewCategories(item);
+  return categories.includes("outside_class_window") || categories.includes("date_mismatch");
+}
+
 function formatReviewReason(item) {
   const categories = getReviewCategories(item);
   return categories.map((category) => reviewCategoryLabels[category] ?? category).join("、");
 }
 
 function formatReviewMatch(item) {
+  const candidate = item.suspected_name_seat_swap;
+  if (candidate) return `疑似姓名欄與座號欄互填；候選：${candidate.class} 班 ${candidate.seat} 號 ${candidate.name}（待教師確認）`;
   if (!item.matched_name) return "姓名無法對上目前名單";
   return `名單：${item.roster_class} 班 ${item.roster_seat} 號 ${item.matched_name}`;
 }
@@ -427,12 +442,13 @@ function renderReviewDecisionCards(submissions, formLabels) {
   let decidedCount = 0;
   for (const submission of submissions) {
     const decision = getReviewDecision(submission);
+    const temporalMismatch = isTemporalMismatch(submission);
     if (decision) decidedCount += 1;
     const card = document.createElement("article");
-    card.className = `review-card${decision ? ` review-card--${decision.verdict}` : ""}`;
+    card.className = `review-card${decision ? ` review-card--${decision.verdict}` : ""}${temporalMismatch ? " review-card--temporal-warning" : ""}`;
     const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
     appendText(card, "h3", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-card__title");
-    appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(submission.submitted_at) || "—"}`, "review-card__original");
+    appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}`, "review-card__original");
     const form = document.createElement("form");
     form.className = "review-card__form";
     form.noValidate = true;
@@ -444,7 +460,10 @@ function renderReviewDecisionCards(submissions, formLabels) {
     const verdict = document.createElement("select");
     verdict.name = "verdict";
     verdict.required = true;
-    for (const [value, text] of [["", "請選擇"], ["confirmed", "確認身分，可補登"], ["unresolved", "暫不確認，維持待核對"]]) {
+    const verdictOptions = temporalMismatch
+      ? [["", "請選擇"], ["unresolved", "不予採計（時間／日期異常）"]]
+      : [["", "請選擇"], ["confirmed", "確認身分，可補登"], ["unresolved", "暫不確認，維持待核對"]];
+    for (const [value, text] of verdictOptions) {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = text;
@@ -567,22 +586,21 @@ function renderReview() {
   const submissions = Array.isArray(data.review_submissions) ? data.review_submissions : [];
   const formLabels = new Map((data.forms ?? []).map((form) => [form.form_key, form.label ?? form.form_key]));
   loadReviewDecisionStore();
-  const nameMismatches = submissions.filter(isNameMismatch);
   el.reviewPanel.hidden = false;
   el.reviewSummary.textContent = submissions.length ? `${submissions.length} 筆需要核對` : "目前沒有需要核對的回覆";
-  el.reviewAlert.hidden = nameMismatches.length === 0;
+  el.reviewAlert.hidden = submissions.length === 0;
   el.reviewAlertList.replaceChildren();
-  if (nameMismatches.length) {
-    el.reviewAlertCount.textContent = `共 ${nameMismatches.length} 筆姓名填寫錯誤的回覆`;
-    for (const submission of nameMismatches) {
+  if (submissions.length) {
+    el.reviewAlertCount.textContent = `共 ${submissions.length} 筆待核對回覆`;
+    for (const submission of submissions) {
       const item = document.createElement("li");
-      item.className = "review-alert__item";
+      item.className = `review-alert__item${isTemporalMismatch(submission) ? " review-alert__item--temporal-warning" : ""}`;
       const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
       appendText(item, "strong", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-alert__item-title");
       appendText(
         item,
         "span",
-        `填入班級：${submission.input_class ?? "—"}｜填入姓名：${submission.input_name ?? "—"}｜送出時間：${formatSubmittedAt(submission.submitted_at) || "—"}`,
+        `填入班級：${submission.input_class ?? "—"}｜座號：${submission.input_seat ?? "—"}｜姓名：${submission.input_name ?? "—"}｜分數：${submission.score ?? "—"}｜送出時間：${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}｜原因：${formatReviewReason(submission)}${submission.suspected_name_seat_swap ? `｜候選：${formatReviewMatch(submission)}` : ""}`,
         "review-alert__item-detail"
       );
       el.reviewAlertList.append(item);
@@ -600,7 +618,7 @@ function renderReview() {
   for (const submission of submissions) {
     const row = document.createElement("tr");
     appendText(row, "td", `${submission.episode} · ${formLabels.get(submission.form_key) ?? submission.form_key}`);
-    appendText(row, "td", formatSubmittedAt(submission.submitted_at));
+    appendText(row, "td", formatSubmittedAt(getSubmissionDisplayTime(submission)));
     appendText(row, "td", submission.input_class ?? "—");
     appendText(row, "td", submission.input_seat ?? "—");
     appendText(row, "td", submission.input_name ?? "—", "student-name");
@@ -608,6 +626,7 @@ function renderReview() {
     appendText(row, "td", formatReviewMatch(submission));
     const reasonCell = appendText(row, "td", formatReviewReason(submission));
     if (isNameMismatch(submission)) reasonCell.classList.add("review-reason--name-mismatch");
+    if (isTemporalMismatch(submission)) reasonCell.classList.add("review-reason--temporal-warning");
     el.reviewBody.append(row);
   }
 }
@@ -616,7 +635,7 @@ function renderScoreHead(episodes) {
   const row = document.createElement("tr");
   appendText(row, "th", "座號");
   appendText(row, "th", "姓名");
-  for (const episode of episodes) appendText(row, "th", `${episode.label}（最高分／送出時間）`);
+  for (const episode of episodes) appendText(row, "th", `${episode.label}（正式分數／送出時間）`);
   el.scoreHead.replaceChildren(row);
 }
 
@@ -627,26 +646,47 @@ function parseScore(value) {
 }
 
 function getAttemptTime(attempt) {
-  return attempt?.submitted_at ?? attempt?.submittedAt ?? attempt?.time ?? null;
+  return attempt?.submitted_at_local ?? attempt?.submitted_at ?? attempt?.submittedAt ?? attempt?.time ?? null;
 }
 
 function formatSubmittedAt(value) {
   const text = String(value ?? "").trim();
-  const match = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)(?:\s+GMT[+-]\d+)?$/u);
+  const local = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})$/u);
+  if (local) return `${local[1]}/${local[2].padStart(2, "0")}/${local[3].padStart(2, "0")} ${local[4].padStart(2, "0")}:${local[5]}:${local[6]}`;
+  const first = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s+GMT[+-]\d+)?$/u);
+  const second = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)(?:\s+GMT[+-]\d+)?$/u);
+  const match = first ?? second;
   if (!match) return text.replace(/\s+GMT[+-]\d+$/u, "");
-  let hour = Number(match[4]);
-  if (match[7] === "下午" && hour < 12) hour += 12;
-  if (match[7] === "上午" && hour === 12) hour = 0;
-  return `${match[1]}/${match[2].padStart(2, "0")}/${match[3].padStart(2, "0")} ${String(hour).padStart(2, "0")}:${match[5]}:${match[6]}`;
+  const period = first ? match[4] : match[7];
+  const hourIndex = first ? 5 : 4;
+  const minuteIndex = first ? 6 : 5;
+  const secondIndex = first ? 7 : 6;
+  let hour = Number(match[hourIndex]);
+  if (period === "下午" && hour < 12) hour += 12;
+  if (period === "上午" && hour === 12) hour = 0;
+  return `${match[1]}/${match[2].padStart(2, "0")}/${match[3].padStart(2, "0")} ${String(hour).padStart(2, "0")}:${match[minuteIndex]}:${match[secondIndex]}`;
+}
+
+function getSubmissionDisplayTime(submission) {
+  return submission?.submitted_at_local ?? submission?.submitted_at ?? null;
 }
 
 function parseAttemptTimestamp(value) {
-  const match = String(value ?? "").match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)/u);
+  const text = String(value ?? "");
+  const local = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})$/u);
+  if (local) return Date.UTC(Number(local[1]), Number(local[2]) - 1, Number(local[3]), Number(local[4]), Number(local[5]), Number(local[6]));
+  const first = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)\s+(\d{1,2}):(\d{2}):(\d{2})/u);
+  const second = text.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(上午|下午)/u);
+  const match = first ?? second;
   if (!match) return null;
-  let hour = Number(match[4]);
-  if (match[7] === "下午" && hour < 12) hour += 12;
-  if (match[7] === "上午" && hour === 12) hour = 0;
-  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, Number(match[5]), Number(match[6]));
+  const period = first ? match[4] : match[7];
+  const hourIndex = first ? 5 : 4;
+  const minuteIndex = first ? 6 : 5;
+  const secondIndex = first ? 7 : 6;
+  let hour = Number(match[hourIndex]);
+  if (period === "下午" && hour < 12) hour += 12;
+  if (period === "上午" && hour === 12) hour = 0;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, Number(match[minuteIndex]), Number(match[secondIndex]));
 }
 
 function getPublishedResult(entry) {
@@ -654,25 +694,40 @@ function getPublishedResult(entry) {
   if (overrideScore !== null) {
     return {
       score: overrideScore,
-      submittedAt: entry.published_override.submitted_at ?? getAttemptTime(entry),
-      submittedAtValue: parseAttemptTimestamp(entry.published_override.submitted_at)
+      submittedAt: entry.published_override.submitted_at_local ?? entry.published_override.submitted_at ?? getAttemptTime(entry),
+      submittedAtValue: parseAttemptTimestamp(entry.published_override.submitted_at_local ?? entry.published_override.submitted_at)
     };
   }
   const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
-  let selected = null;
-  for (const attempt of attempts) {
-    const score = parseScore(attempt?.score ?? attempt?.value);
-    const submittedAt = getAttemptTime(attempt);
-    const submittedAtValue = parseAttemptTimestamp(submittedAt);
-    if (score === null) continue;
-    if (!selected || score > selected.score || (score === selected.score && submittedAtValue !== null && submittedAtValue > selected.submittedAtValue)) {
-      selected = { score, submittedAt, submittedAtValue };
-    }
+  const storedScore = parseScore(entry?.value);
+  if (!attempts.length && storedScore !== null) {
+    const submittedAt = entry?.submitted_at_local ?? entry?.submitted_at ?? getAttemptTime(entry);
+    return {
+      score: storedScore,
+      submittedAt,
+      submittedAtValue: parseAttemptTimestamp(submittedAt)
+    };
   }
-  if (selected) return selected;
-
-  const score = parseScore(entry?.value);
-  return score === null ? null : { score, submittedAt: getAttemptTime(entry) };
+  const selectedReference = entry?.selected_attempt;
+  const referenced = attempts.find((attempt) => attempt?.eligible !== false && (
+    String(attempt?.form_key ?? "") === String(selectedReference?.form_key ?? "")
+    && String(attempt?.source_row ?? "") === String(selectedReference?.source_row ?? "")
+    && String(attempt?.submitted_at ?? "") === String(selectedReference?.submitted_at ?? "")
+  ));
+  const selected = referenced ?? attempts
+    .filter((attempt) => attempt?.eligible !== false && parseScore(attempt?.published_score ?? attempt?.score ?? attempt?.value) !== null)
+    .sort((left, right) => {
+      const leftTime = parseAttemptTimestamp(getAttemptTime(left));
+      const rightTime = parseAttemptTimestamp(getAttemptTime(right));
+      if (leftTime !== null && rightTime === null) return -1;
+      if (leftTime === null && rightTime !== null) return 1;
+      if (leftTime !== null && rightTime !== null && leftTime !== rightTime) return leftTime - rightTime;
+      return Number(left?.source_row ?? left?.attempt ?? 0) - Number(right?.source_row ?? right?.attempt ?? 0);
+    })[0];
+  if (!selected) return null;
+  const score = parseScore(selected.published_score ?? selected.score ?? selected.value);
+  const submittedAt = getAttemptTime(selected);
+  return score === null ? null : { score, submittedAt, submittedAtValue: parseAttemptTimestamp(submittedAt) };
 }
 
 function getEntryStatus(entry) {
@@ -690,7 +745,7 @@ function scoreCell(entry) {
   if (status === "no_response") pill.title = "目前沒有回覆資料";
   if (result?.submittedAt) {
     const time = appendText(cell, "time", formatSubmittedAt(result.submittedAt), "score-time");
-    time.title = "最高分回覆送出時間";
+    time.title = "正式選取回覆送出時間";
   }
   return cell;
 }
@@ -758,7 +813,7 @@ function lookupStudent(event) {
   }
 
   el.studentTitle.textContent = `${student.class} 班 ${student.seat} 號｜${student.name}`;
-  el.studentSummary.textContent = `共 ${data.episodes.length} 個 EP；每個 EP 顯示最高分與該次送出時間。`;
+  el.studentSummary.textContent = `共 ${data.episodes.length} 個 EP；每個 EP 顯示正式選取分數與該次送出時間。`;
   renderStudentResults(student);
   el.studentPanel.hidden = false;
   el.studentStatus.textContent = `已找到 ${student.name} 的成績。`;
