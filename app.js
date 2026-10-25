@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20261025-teacher-decisions-1";
+const DATA_URL = "data/grades.enc.json?v=20261025-review-colors-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -296,7 +296,17 @@ function getReviewItemsForStudent(student, episodeId) {
   return reviewByStudentEpisode.get(reviewStudentEpisodeKey(student.class, student.seat, episodeId)) ?? [];
 }
 
-function getReviewState(items) {
+function getResolvedGradeCell(student, episodeId) {
+  return (data.resolved_grade_cells ?? []).find((cell) => (
+    cell.status === "resolved"
+    && String(cell.episode ?? "") === String(episodeId ?? "")
+    && String(cell.class ?? "") === String(student?.class ?? "")
+    && normalizeSeatInput(cell.seat) === normalizeSeatInput(student?.seat)
+  )) ?? null;
+}
+
+function getReviewState(student, episodeId, items) {
+  if (getResolvedGradeCell(student, episodeId)) return "resolved";
   if (!items.length) return null;
   const decisions = items.map(getReviewDecision);
   if (decisions.every((decision) => decision?.verdict === "confirmed")) return "confirmed";
@@ -835,14 +845,21 @@ function renderResponseAttempt(container, attempt, index) {
 
 function renderResponseDialog() {
   if (!responseDialogState) return;
-  const { title, summary, attempts, reviewItems } = responseDialogState;
+  const { title, summary, attempts, reviewItems, reviewNotice } = responseDialogState;
   el.responseDialogTitle.textContent = title;
   el.responseDialogSummary.textContent = summary;
   el.responseDialogAnswers.textContent = responseAnswersVisible ? "隱藏答案" : "一鍵顯示答案";
   el.responseDialogReview.replaceChildren();
-  if (reviewItems.length) {
+  if (reviewItems.length || reviewNotice) {
     el.responseDialogReview.hidden = false;
-    appendText(el.responseDialogReview, "strong", `待處理原因（${reviewItems.length} 筆）`, "response-dialog__review-title");
+    if (reviewNotice) {
+      el.responseDialogReview.className = "response-dialog__review response-dialog__review--resolved";
+      appendText(el.responseDialogReview, "strong", "教師判斷", "response-dialog__review-title");
+      appendText(el.responseDialogReview, "span", reviewNotice.reason, "response-dialog__review-item");
+    } else {
+      el.responseDialogReview.className = "response-dialog__review";
+      appendText(el.responseDialogReview, "strong", `待處理原因（${reviewItems.length} 筆）`, "response-dialog__review-title");
+    }
     for (const item of reviewItems) appendText(el.responseDialogReview, "span", formatReviewReason(item), "response-dialog__review-item");
   } else {
     el.responseDialogReview.hidden = true;
@@ -851,8 +868,8 @@ function renderResponseDialog() {
   attempts.forEach((attempt, index) => renderResponseAttempt(el.responseDialogAttempts, attempt, index));
 }
 
-function openResponseDialog(title, summary, attempts, reviewItems = []) {
-  responseDialogState = { title, summary, attempts, reviewItems };
+function openResponseDialog(title, summary, attempts, reviewItems = [], reviewNotice = null) {
+  responseDialogState = { title, summary, attempts, reviewItems, reviewNotice };
   responseAnswersVisible = false;
   renderResponseDialog();
   if (typeof el.responseDialog.showModal === "function") el.responseDialog.showModal();
@@ -883,11 +900,13 @@ function handleResponseLookupClick(event) {
   const entry = student.scores?.[episode];
   const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
   if (!attempts.length) return;
+  const reviewNotice = getResolvedGradeCell(student, episode);
   openResponseDialog(
     `${student.class} 班 ${student.seat} 號｜${student.name}｜${episode}`,
     `共 ${attempts.length} 次填寫；正式成績依目前選取規則顯示。`,
     attempts,
-    getReviewItemsForStudent(student, episode)
+    getReviewItemsForStudent(student, episode),
+    reviewNotice
   );
 }
 
@@ -898,16 +917,20 @@ function scoreCell(entry, context = {}) {
   const result = status === "published" ? getPublishedResult(entry) : null;
   const text = status === "published" ? `${result?.score ?? "—"}` : status === "pending_review" ? "待確認" : "—";
   const reviewItems = context.student ? getReviewItemsForStudent(context.student, context.episode) : [];
+  const reviewState = context.student ? getReviewState(context.student, context.episode, reviewItems) : null;
   const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
   const target = attempts.length ? document.createElement("button") : cell;
   if (target !== cell) {
     target.type = "button";
     target.className = "score-cell__button";
     target.dataset.responseKey = [context.episode, context.student.class, normalizeSeatInput(context.student.seat)].join("|");
-    const reviewState = getReviewState(reviewItems);
     if (reviewState === "pending") target.classList.add("score-cell__button--review");
-    if (reviewState === "confirmed") target.classList.add("score-cell__button--resolved");
-    target.title = reviewState === "pending" ? "此 EP 有待處理資料；點擊查看原因與原始填答" : "點擊查看原始填答";
+    if (reviewState === "resolved" || reviewState === "confirmed") target.classList.add("score-cell__button--resolved");
+    target.title = reviewState === "pending"
+      ? "此 EP 尚未判斷；點擊查看原因與原始填答"
+      : reviewState === "resolved" || reviewState === "confirmed"
+        ? "教師已判斷；點擊查看決定說明與原始填答"
+        : "點擊查看原始填答";
     cell.append(target);
   }
   const pill = appendText(target, "span", text, `score-pill ${className}`);
@@ -917,7 +940,11 @@ function scoreCell(entry, context = {}) {
     const time = appendText(target, "time", formatSubmittedAt(result.submittedAt), "score-time");
     time.title = "正式選取回覆送出時間";
   }
-  if (reviewItems.length) appendText(target, "span", getReviewState(reviewItems) === "confirmed" ? "已處理" : `⚠ ${reviewItems.length} 筆待處理`, "score-review-label");
+  if (reviewState === "resolved" || reviewState === "confirmed") {
+    appendText(target, "span", "✓ 已判斷", "score-review-label");
+  } else if (reviewItems.length) {
+    appendText(target, "span", `⚠ ${reviewItems.length} 筆待判斷`, "score-review-label");
+  }
   return cell;
 }
 
