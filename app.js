@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20261025-review-count-1";
+const DATA_URL = "data/grades.enc.json?v=20261025-temporal-approval-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -326,6 +326,7 @@ function getReviewDisposition(submission) {
   if (resolvedCell) return { status: "resolved", reason: resolvedCell.reason };
   const storedDecision = getReviewDecision(submission);
   if (storedDecision) return { status: "resolved", reason: storedDecision.note || "教師已保存判斷。" };
+  if (submission.teacher_approved === true) return { status: "resolved", reason: submission.teacher_approval_reason || "教師已核准此筆回覆。" };
   const categories = getReviewCategories(submission);
   if (categories.some((category) => HARD_REVIEW_CATEGORIES.has(category))) return { status: "pending" };
   if (categories.length && categories.every((category) => AUTO_RESOLVED_REVIEW_CATEGORIES.has(category))) {
