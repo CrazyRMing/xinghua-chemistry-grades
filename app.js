@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20261025-review-colors-1";
+const DATA_URL = "data/grades.enc.json?v=20261025-review-count-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -252,8 +252,12 @@ function renderHeader() {
   el.title.textContent = REVIEW_MODE ? "回覆核對紀錄" : data.title;
   el.subtitle.textContent = REVIEW_MODE ? "查看需要核對的表單回覆。" : "輸入班級號碼，查看本班各 EP 成績。";
   const availableEpisodes = getAvailableEpisodes();
-  const reviewCount = Array.isArray(data.review_submissions) ? data.review_submissions.length : 0;
-  el.status.textContent = REVIEW_MODE ? `${reviewCount} 筆回覆需要核對` : `${availableEpisodes.length} 個 EP 已有成績 · 請輸入班級號碼查看成績`;
+  const allReviewCount = Array.isArray(data.review_submissions) ? data.review_submissions.length : 0;
+  const reviewCount = getPendingReviewSubmissions().length;
+  const handledCount = Math.max(0, allReviewCount - reviewCount);
+  el.status.textContent = REVIEW_MODE
+    ? `${reviewCount} 筆待教師判斷 · ${handledCount} 筆已自動歸入或已處理`
+    : `${availableEpisodes.length} 個 EP 已有成績 · 請輸入班級號碼查看成績`;
   el.reviewReminder.hidden = REVIEW_MODE || reviewCount === 0;
   el.reviewReminderCount.textContent = String(reviewCount);
   el.updatedAt.textContent = `更新日期：${data.updated_at}`;
@@ -305,8 +309,51 @@ function getResolvedGradeCell(student, episodeId) {
   )) ?? null;
 }
 
+function getResolvedGradeCellForSubmission(submission) {
+  return (data.resolved_grade_cells ?? []).find((cell) => (
+    cell.status === "resolved"
+    && String(cell.episode ?? "") === String(submission?.episode ?? "")
+    && String(cell.class ?? "") === String(submission?.roster_class ?? "")
+    && normalizeSeatInput(cell.seat) === normalizeSeatInput(submission?.roster_seat)
+  )) ?? null;
+}
+
+const HARD_REVIEW_CATEGORIES = new Set(["outside_class_window", "date_mismatch", "name_mismatch", "possible_name_seat_swap", "invalid_response"]);
+const AUTO_RESOLVED_REVIEW_CATEGORIES = new Set(["class_or_seat_mismatch", "name_field_mismatch", "manual_score_correction", "duplicate_submission"]);
+
+function getReviewDisposition(submission) {
+  const resolvedCell = getResolvedGradeCellForSubmission(submission);
+  if (resolvedCell) return { status: "resolved", reason: resolvedCell.reason };
+  const storedDecision = getReviewDecision(submission);
+  if (storedDecision) return { status: "resolved", reason: storedDecision.note || "教師已保存判斷。" };
+  const categories = getReviewCategories(submission);
+  if (categories.some((category) => HARD_REVIEW_CATEGORIES.has(category))) return { status: "pending" };
+  if (categories.length && categories.every((category) => AUTO_RESOLVED_REVIEW_CATEGORIES.has(category))) {
+    if (categories.includes("class_or_seat_mismatch") && submission.matched_name) {
+      return { status: "resolved", reason: `姓名已唯一對上 ${submission.roster_class} 班 ${submission.roster_seat} 號 ${submission.matched_name}；自填班級／座號僅作稽核。` };
+    }
+    return { status: "resolved", reason: formatReviewReason(submission) };
+  }
+  return { status: "pending" };
+}
+
+function getReviewNoticeForStudentEpisode(student, episodeId, items) {
+  const resolvedCell = getResolvedGradeCell(student, episodeId);
+  if (resolvedCell) return resolvedCell;
+  if (!items.length) return null;
+  const dispositions = items.map(getReviewDisposition);
+  if (dispositions.every((disposition) => disposition.status === "resolved")) {
+    return { status: "resolved", reason: [...new Set(dispositions.map((disposition) => disposition.reason).filter(Boolean))].join("；") };
+  }
+  return null;
+}
+
+function getPendingReviewSubmissions() {
+  return (data.review_submissions ?? []).filter((submission) => getReviewDisposition(submission).status === "pending");
+}
+
 function getReviewState(student, episodeId, items) {
-  if (getResolvedGradeCell(student, episodeId)) return "resolved";
+  if (getReviewNoticeForStudentEpisode(student, episodeId, items)) return "resolved";
   if (!items.length) return null;
   const decisions = items.map(getReviewDecision);
   if (decisions.every((decision) => decision?.verdict === "confirmed")) return "confirmed";
@@ -501,9 +548,9 @@ function renderReviewDecisionCards(submissions, formLabels) {
     details.id = `review-ep-${episode}`;
     details.open = groups.size === 1;
     const summary = document.createElement("summary");
-    const groupDecidedCount = group.filter((submission) => getReviewDecision(submission)).length;
     appendText(summary, "strong", episode);
-    appendText(summary, "span", `${group.length} 筆待核對｜已處理 ${groupDecidedCount} 筆`);
+    const groupDecidedCount = group.filter((submission) => getReviewDecision(submission)).length;
+    appendText(summary, "span", `${group.length} 筆待教師判斷${groupDecidedCount ? `｜本頁已判斷 ${groupDecidedCount} 筆` : ""}`);
     details.append(summary);
     const groupCards = document.createElement("div");
     groupCards.className = "review-group__cards";
@@ -516,6 +563,8 @@ function renderReviewDecisionCards(submissions, formLabels) {
       const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
       appendText(card, "h3", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-card__title");
       appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}`, "review-card__original");
+      appendText(card, "p", `錯誤原因：${formatReviewReason(submission) || "待確認"}`, "review-card__reason");
+      appendText(card, "p", `名單對照：${formatReviewMatch(submission)}`, "review-card__match");
       const form = document.createElement("form");
       form.className = "review-card__form";
       form.noValidate = true;
@@ -622,7 +671,7 @@ function getReviewDecisionText(submissions) {
 }
 
 async function copyReviewDecisions() {
-  const json = getReviewDecisionText(data.review_submissions ?? []);
+  const json = getReviewDecisionText(getPendingReviewSubmissions());
   try {
     if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
     await navigator.clipboard.writeText(json);
@@ -644,7 +693,7 @@ async function copyReviewDecisions() {
 
 function downloadReviewDecisions() {
   try {
-    const json = getReviewDecisionText(data.review_submissions ?? []);
+    const json = getReviewDecisionText(getPendingReviewSubmissions());
     const blob = new Blob([json], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -659,15 +708,19 @@ function downloadReviewDecisions() {
 }
 
 function renderReview() {
-  const submissions = Array.isArray(data.review_submissions) ? data.review_submissions : [];
+  const allSubmissions = Array.isArray(data.review_submissions) ? data.review_submissions : [];
+  const submissions = getPendingReviewSubmissions();
+  const handledCount = Math.max(0, allSubmissions.length - submissions.length);
   const formLabels = new Map((data.forms ?? []).map((form) => [form.form_key, form.label ?? form.form_key]));
   loadReviewDecisionStore();
   el.reviewPanel.hidden = false;
-  el.reviewSummary.textContent = submissions.length ? `${submissions.length} 筆需要核對` : "目前沒有需要核對的回覆";
+  el.reviewSummary.textContent = submissions.length
+    ? `${submissions.length} 筆待教師判斷；另有 ${handledCount} 筆已自動歸入或已處理`
+    : `目前沒有待教師判斷的回覆；已自動歸入或已處理 ${handledCount} 筆`;
   el.reviewAlert.hidden = submissions.length === 0;
   el.reviewAlertList.replaceChildren();
   if (submissions.length) {
-    el.reviewAlertCount.textContent = `共 ${submissions.length} 筆待核對回覆`;
+    el.reviewAlertCount.textContent = `共 ${submissions.length} 筆待教師判斷回覆`;
     const grouped = new Map();
     for (const submission of submissions) {
       const group = grouped.get(submission.episode ?? "未標示 EP") ?? [];
@@ -686,7 +739,7 @@ function renderReview() {
   el.reviewBody.replaceChildren();
   if (!submissions.length) {
     const row = document.createElement("tr");
-    const cell = appendText(row, "td", "目前沒有需要核對的回覆", "empty-state");
+    const cell = appendText(row, "td", "目前沒有待教師判斷的回覆", "empty-state");
     cell.colSpan = 8;
     el.reviewBody.append(row);
     return;
@@ -900,12 +953,13 @@ function handleResponseLookupClick(event) {
   const entry = student.scores?.[episode];
   const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
   if (!attempts.length) return;
-  const reviewNotice = getResolvedGradeCell(student, episode);
+  const reviewItems = getReviewItemsForStudent(student, episode);
+  const reviewNotice = getReviewNoticeForStudentEpisode(student, episode, reviewItems);
   openResponseDialog(
     `${student.class} 班 ${student.seat} 號｜${student.name}｜${episode}`,
     `共 ${attempts.length} 次填寫；正式成績依目前選取規則顯示。`,
     attempts,
-    getReviewItemsForStudent(student, episode),
+    reviewItems,
     reviewNotice
   );
 }

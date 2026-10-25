@@ -158,6 +158,8 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .review-card--unresolved { border-color: #e3a0a0; background: #fff8f8; }
 .review-card__title { margin-bottom: .25rem; color: var(--ink); font-size: 1.1rem; }
 .review-card__original { margin-bottom: .8rem; color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
+.review-card__reason { margin-bottom: .45rem; padding: .55rem .7rem; border-radius: .55rem; background: #fff1f0; color: #8e1c13; font-weight: 800; overflow-wrap: anywhere; }
+.review-card__match { margin-bottom: .8rem; color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
 .review-card__form { display: grid; gap: .75rem; }
 .review-card__confirmed-fields { display: grid; grid-template-columns: repeat(3, minmax(8rem, 1fr)); gap: .65rem; }
 .review-card__confirmed-fields[hidden] { display: none; }
