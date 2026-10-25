@@ -7,8 +7,8 @@
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜EP 成績</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f4b942'/%3E%3Cpath d='M19 13h26v8H36v30h-8V21H19z' fill='%23102333'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="styles.css?v=20261009-ep13-q5-sendpoint-bounded-1">
-    <script type="module" src="app.js?v=20261009-ep13-q5-sendpoint-bounded-1"></script>
+    <link rel="stylesheet" href="styles.css?v=20261025-608-adjustment-1">
+    <script type="module" src="app.js?v=20261025-608-adjustment-1"></script>
   </head>
   <body>
     <div class="site-shell">
@@ -176,7 +176,7 @@
             <p id="review-storage-status" class="review-storage-status" role="status" aria-live="polite"></p>
             <p id="review-feedback" class="review-feedback" role="status" aria-live="polite"></p>
             <div id="review-cards" class="review-cards" aria-live="polite"></div>
-            <div class="review-table-frame">
+            <div class="review-table-frame" hidden>
               <table>
                 <thead>
                   <tr><th>EP／表單</th><th>送出時間</th><th>學生填寫的班級</th><th>學生填寫的座號</th><th>學生填寫的姓名</th><th>分數</th><th>名單核對</th><th>原因</th></tr>
@@ -186,6 +186,25 @@
             </div>
           </section>
         </div>
+
+        <dialog id="response-dialog" class="response-dialog" aria-labelledby="response-dialog-title">
+          <div class="response-dialog__surface">
+            <div class="response-dialog__heading">
+              <div>
+                <p class="section-kicker">ORIGINAL RESPONSE</p>
+                <h2 id="response-dialog-title">原始填答</h2>
+              </div>
+              <button id="response-dialog-close" class="response-dialog__close" type="button" aria-label="關閉原始填答">×</button>
+            </div>
+            <p id="response-dialog-summary" class="response-dialog__summary">—</p>
+            <div id="response-dialog-review" class="response-dialog__review" hidden></div>
+            <div class="response-dialog__tools">
+              <button id="response-dialog-answers" class="review-action-button" type="button">一鍵顯示答案</button>
+              <span class="response-dialog__hint">預設只顯示題目、回答與正確性。</span>
+            </div>
+            <div id="response-dialog-attempts" class="response-dialog__attempts"></div>
+          </div>
+        </dialog>
       </main>
 
       <footer>

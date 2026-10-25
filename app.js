@@ -1,4 +1,4 @@
-const DATA_URL = "data/grades.enc.json?v=20261009-ep13-q5-sendpoint-bounded-1";
+const DATA_URL = "data/grades.enc.json?v=20261025-608-adjustment-1";
 const DEFAULT_AAD = "xinghua-chemistry-grades-v1";
 const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -53,6 +53,13 @@ const el = {
   reviewCards: document.querySelector("#review-cards"),
   reviewSummary: document.querySelector("#review-summary"),
   reviewBody: document.querySelector("#review-body"),
+  responseDialog: document.querySelector("#response-dialog"),
+  responseDialogClose: document.querySelector("#response-dialog-close"),
+  responseDialogTitle: document.querySelector("#response-dialog-title"),
+  responseDialogSummary: document.querySelector("#response-dialog-summary"),
+  responseDialogReview: document.querySelector("#response-dialog-review"),
+  responseDialogAnswers: document.querySelector("#response-dialog-answers"),
+  responseDialogAttempts: document.querySelector("#response-dialog-attempts"),
   updatedAt: document.querySelector("#updated-at")
 };
 
@@ -67,6 +74,9 @@ let reviewDecisionStore = {
   decisions: {}
 };
 let reviewDecisionStoreLoaded = false;
+let reviewByStudentEpisode = new Map();
+let responseDialogState = null;
+let responseAnswersVisible = false;
 
 const RECENT_EPISODE_COUNT = 6;
 
@@ -186,13 +196,14 @@ function hasAnySubmission(entry) {
   return entry.status && entry.status !== "no_response";
 }
 
-function getAvailableEpisodes() {
-  return data.episodes.filter((episode) => data.students.some((student) => hasAnySubmission(student.scores?.[episode.id])));
+function getAvailableEpisodes(className = null) {
+  const students = className ? data.students.filter((student) => student.class === className) : data.students;
+  return data.episodes.filter((episode) => students.some((student) => hasAnySubmission(student.scores?.[episode.id])));
 }
 
-function getVisibleEpisodes() {
+function getVisibleEpisodes(className = currentClassName) {
   if (episodeView === "all") return data.episodes;
-  const availableEpisodes = getAvailableEpisodes();
+  const availableEpisodes = getAvailableEpisodes(className);
   return availableEpisodes.slice(-Math.min(RECENT_EPISODE_COUNT, availableEpisodes.length));
 }
 
@@ -217,10 +228,11 @@ function renderClassSummary(className, episodes) {
   }
 }
 
-function updateEpisodeViewControls() {
-  const availableEpisodes = getAvailableEpisodes();
+function updateEpisodeViewControls(className = currentClassName) {
+  const availableEpisodes = getAvailableEpisodes(className);
   const recentEpisodes = availableEpisodes.slice(-Math.min(RECENT_EPISODE_COUNT, availableEpisodes.length));
-  el.episodeViewRecent.textContent = recentEpisodes.length ? `最新 ${recentEpisodes.length} 次（${formatEpisodeRange(recentEpisodes)}）` : "最新 6 次（尚無已導入成績）";
+  const scope = className ? `${className} 班` : "目前資料";
+  el.episodeViewRecent.textContent = recentEpisodes.length ? `${scope}最新 ${recentEpisodes.length} 次（${formatEpisodeRange(recentEpisodes)}）` : `${scope}尚無已導入成績`;
   el.episodeViewAll.textContent = `查看全部（${formatEpisodeRange(data.episodes)}）`;
   el.episodeViewRecent.setAttribute("aria-pressed", String(episodeView === "recent"));
   el.episodeViewAll.setAttribute("aria-pressed", String(episodeView === "all"));
@@ -228,7 +240,7 @@ function updateEpisodeViewControls() {
 
 function renderClassView() {
   if (!currentClassName) return;
-  const episodes = getVisibleEpisodes();
+  const episodes = getVisibleEpisodes(currentClassName);
   el.classTitle.textContent = `${currentClassName} 班`;
   renderClassSummary(currentClassName, episodes);
   el.tableCaption.textContent = `${currentClassName} 班｜${formatEpisodeRange(episodes)} 成績`;
@@ -263,6 +275,32 @@ function getReviewCategories(item) {
   const categories = item.categories ?? item.category;
   if (!Array.isArray(categories)) return categories ? [categories] : [];
   return categories.filter(Boolean);
+}
+
+function reviewStudentEpisodeKey(className, seat, episode) {
+  return [episode, className, normalizeSeatInput(seat)].join("|");
+}
+
+function rebuildReviewIndex() {
+  reviewByStudentEpisode = new Map();
+  for (const submission of data.review_submissions ?? []) {
+    if (!submission.roster_class || !submission.roster_seat || !submission.episode) continue;
+    const key = reviewStudentEpisodeKey(submission.roster_class, submission.roster_seat, submission.episode);
+    const items = reviewByStudentEpisode.get(key) ?? [];
+    items.push(submission);
+    reviewByStudentEpisode.set(key, items);
+  }
+}
+
+function getReviewItemsForStudent(student, episodeId) {
+  return reviewByStudentEpisode.get(reviewStudentEpisodeKey(student.class, student.seat, episodeId)) ?? [];
+}
+
+function getReviewState(items) {
+  if (!items.length) return null;
+  const decisions = items.map(getReviewDecision);
+  if (decisions.every((decision) => decision?.verdict === "confirmed")) return "confirmed";
+  return "pending";
 }
 
 function isNameMismatch(item) {
@@ -440,73 +478,101 @@ function renderReviewDecisionCards(submissions, formLabels) {
     return;
   }
   let decidedCount = 0;
+  const groups = new Map();
   for (const submission of submissions) {
-    const decision = getReviewDecision(submission);
-    const temporalMismatch = isTemporalMismatch(submission);
-    if (decision) decidedCount += 1;
-    const card = document.createElement("article");
-    card.className = `review-card${decision ? ` review-card--${decision.verdict}` : ""}${temporalMismatch ? " review-card--temporal-warning" : ""}`;
-    const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
-    appendText(card, "h3", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-card__title");
-    appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}`, "review-card__original");
-    const form = document.createElement("form");
-    form.className = "review-card__form";
-    form.noValidate = true;
-    form.dataset.reviewKey = reviewDecisionKey(submission);
+    const episode = submission.episode ?? "未標示 EP";
+    const group = groups.get(episode) ?? [];
+    group.push(submission);
+    groups.set(episode, group);
+  }
+  for (const [episode, group] of groups) {
+    const details = document.createElement("details");
+    details.className = "review-group";
+    details.id = `review-ep-${episode}`;
+    details.open = groups.size === 1;
+    const summary = document.createElement("summary");
+    const groupDecidedCount = group.filter((submission) => getReviewDecision(submission)).length;
+    appendText(summary, "strong", episode);
+    appendText(summary, "span", `${group.length} 筆待核對｜已處理 ${groupDecidedCount} 筆`);
+    details.append(summary);
+    const groupCards = document.createElement("div");
+    groupCards.className = "review-group__cards";
+    for (const submission of group) {
+      const decision = getReviewDecision(submission);
+      const temporalMismatch = isTemporalMismatch(submission);
+      if (decision) decidedCount += 1;
+      const card = document.createElement("article");
+      card.className = `review-card${decision ? ` review-card--${decision.verdict}` : ""}${temporalMismatch ? " review-card--temporal-warning" : ""}`;
+      const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
+      appendText(card, "h3", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-card__title");
+      appendText(card, "p", `原始填答：班級 ${submission.input_class ?? "—"}｜座號 ${submission.input_seat ?? "—"}｜姓名 ${submission.input_name ?? "—"}｜分數 ${submission.score ?? "—"}｜送出 ${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}`, "review-card__original");
+      const form = document.createElement("form");
+      form.className = "review-card__form";
+      form.noValidate = true;
+      form.dataset.reviewKey = reviewDecisionKey(submission);
 
-    const verdictLabel = document.createElement("label");
-    verdictLabel.className = "review-field";
-    appendText(verdictLabel, "span", "教師判斷", "review-field__label");
-    const verdict = document.createElement("select");
-    verdict.name = "verdict";
-    verdict.required = true;
-    const verdictOptions = temporalMismatch
-      ? [["", "請選擇"], ["unresolved", "不予採計（時間／日期異常）"]]
-      : [["", "請選擇"], ["confirmed", "確認身分，可補登"], ["unresolved", "暫不確認，維持待核對"]];
-    for (const [value, text] of verdictOptions) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = text;
-      verdictLabel.append(option);
+      const verdictLabel = document.createElement("label");
+      verdictLabel.className = "review-field";
+      appendText(verdictLabel, "span", "教師判斷", "review-field__label");
+      const verdict = document.createElement("select");
+      verdict.name = "verdict";
+      verdict.required = true;
+      const verdictOptions = temporalMismatch
+        ? [["", "請選擇"], ["unresolved", "不予採計（時間／日期異常）"]]
+        : [["", "請選擇"], ["confirmed", "確認身分，可補登"], ["unresolved", "暫不確認，維持待核對"]];
+      for (const [value, text] of verdictOptions) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        verdictLabel.append(option);
+      }
+      verdict.value = decision?.verdict ?? "";
+      verdictLabel.append(verdict);
+      form.append(verdictLabel);
+
+      const confirmedFields = document.createElement("div");
+      confirmedFields.className = "review-card__confirmed-fields";
+      confirmedFields.dataset.confirmedFields = "true";
+      confirmedFields.append(
+        createReviewField("確認後班級（3 位數字）", "confirmed_class", decision?.confirmed_class),
+        createReviewField("確認後座號（數字）", "confirmed_seat", decision?.confirmed_seat),
+        createReviewField("確認後姓名（不可含數字）", "confirmed_name", decision?.confirmed_name)
+      );
+      form.append(confirmedFields);
+
+      const noteLabel = document.createElement("label");
+      noteLabel.className = "review-field review-field--full";
+      appendText(noteLabel, "span", "課堂備註（選填）", "review-field__label");
+      const note = document.createElement("textarea");
+      note.name = "note";
+      note.rows = 2;
+      note.value = decision?.note ?? "";
+      note.placeholder = "例如：學生當場確認為 506 班 07 號。";
+      noteLabel.append(note);
+      form.append(noteLabel);
+
+      const formActions = document.createElement("div");
+      formActions.className = "review-card__actions";
+      const responseButton = document.createElement("button");
+      responseButton.type = "button";
+      responseButton.className = "review-action-button review-action-button--secondary";
+      responseButton.dataset.reviewResponseKey = reviewDecisionKey(submission);
+      responseButton.textContent = "查看原始填答";
+      formActions.append(responseButton);
+      const saveButton = document.createElement("button");
+      saveButton.type = "submit";
+      saveButton.className = "review-action-button";
+      saveButton.textContent = decision ? "更新判斷紀錄" : "保存此筆判斷";
+      formActions.append(saveButton);
+      const status = appendText(formActions, "span", decision ? `已${decision.verdict === "confirmed" ? "確認" : "暫不確認"}｜${decision.judged_at}` : "尚未判斷", "review-card__status");
+      status.dataset.reviewStatus = "true";
+      form.append(formActions);
+      card.append(form);
+      groupCards.append(card);
+      syncReviewCardFields(form);
     }
-    verdict.value = decision?.verdict ?? "";
-    verdictLabel.append(verdict);
-    form.append(verdictLabel);
-
-    const confirmedFields = document.createElement("div");
-    confirmedFields.className = "review-card__confirmed-fields";
-    confirmedFields.dataset.confirmedFields = "true";
-    confirmedFields.append(
-      createReviewField("確認後班級（3 位數字）", "confirmed_class", decision?.confirmed_class),
-      createReviewField("確認後座號（數字）", "confirmed_seat", decision?.confirmed_seat),
-      createReviewField("確認後姓名（不可含數字）", "confirmed_name", decision?.confirmed_name)
-    );
-    form.append(confirmedFields);
-
-    const noteLabel = document.createElement("label");
-    noteLabel.className = "review-field review-field--full";
-    appendText(noteLabel, "span", "課堂備註（選填）", "review-field__label");
-    const note = document.createElement("textarea");
-    note.name = "note";
-    note.rows = 2;
-    note.value = decision?.note ?? "";
-    note.placeholder = "例如：學生當場確認為 506 班 07 號。";
-    noteLabel.append(note);
-    form.append(noteLabel);
-
-    const formActions = document.createElement("div");
-    formActions.className = "review-card__actions";
-    const saveButton = document.createElement("button");
-    saveButton.type = "submit";
-    saveButton.className = "review-action-button";
-    saveButton.textContent = decision ? "更新判斷紀錄" : "保存此筆判斷";
-    formActions.append(saveButton);
-    const status = appendText(formActions, "span", decision ? `已${decision.verdict === "confirmed" ? "確認" : "暫不確認"}｜${decision.judged_at}` : "尚未判斷", "review-card__status");
-    status.dataset.reviewStatus = "true";
-    form.append(formActions);
-    card.append(form);
-    el.reviewCards.append(card);
-    syncReviewCardFields(form);
+    details.append(groupCards);
+    el.reviewCards.append(details);
   }
   el.reviewDecisionCount.textContent = `已判斷 ${decidedCount} / ${submissions.length} 筆`;
 }
@@ -592,17 +658,17 @@ function renderReview() {
   el.reviewAlertList.replaceChildren();
   if (submissions.length) {
     el.reviewAlertCount.textContent = `共 ${submissions.length} 筆待核對回覆`;
+    const grouped = new Map();
     for (const submission of submissions) {
+      const group = grouped.get(submission.episode ?? "未標示 EP") ?? [];
+      group.push(submission);
+      grouped.set(submission.episode ?? "未標示 EP", group);
+    }
+    for (const [episode, group] of grouped) {
       const item = document.createElement("li");
-      item.className = `review-alert__item${isTemporalMismatch(submission) ? " review-alert__item--temporal-warning" : ""}`;
-      const formLabel = formLabels.get(submission.form_key) ?? submission.form_key ?? "未標示表單";
-      appendText(item, "strong", `${submission.episode ?? "未標示 EP"} · ${formLabel}`, "review-alert__item-title");
-      appendText(
-        item,
-        "span",
-        `填入班級：${submission.input_class ?? "—"}｜座號：${submission.input_seat ?? "—"}｜姓名：${submission.input_name ?? "—"}｜分數：${submission.score ?? "—"}｜送出時間：${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}｜原因：${formatReviewReason(submission)}${submission.suspected_name_seat_swap ? `｜候選：${formatReviewMatch(submission)}` : ""}`,
-        "review-alert__item-detail"
-      );
+      item.className = "review-alert__item";
+      appendText(item, "strong", episode, "review-alert__item-title");
+      appendText(item, "span", `${group.length} 筆待核對；請展開下方對應 EP 逐筆處理。`, "review-alert__item-detail");
       el.reviewAlertList.append(item);
     }
   }
@@ -734,19 +800,124 @@ function getEntryStatus(entry) {
   return getPublishedResult(entry) ? "published" : entry?.status ?? "no_response";
 }
 
-function scoreCell(entry) {
+function responseText(value) {
+  return value === null || value === undefined || value === "" ? "（未填答）" : String(value);
+}
+
+function renderResponseAttempt(container, attempt, index) {
+  const article = document.createElement("article");
+  article.className = "response-attempt";
+  appendText(article, "h3", `第 ${index + 1} 次填寫｜${formatSubmittedAt(getAttemptTime(attempt)) || "時間不明"}`, "response-attempt__title");
+  appendText(article, "p", `原始分數：${attempt.score ?? "—"}/${attempt.score_max ?? 100}｜填入班級：${attempt.input_class ?? "—"}｜座號：${attempt.input_seat ?? "—"}｜姓名：${attempt.input_name ?? "—"}${attempt.published_score !== undefined ? `｜正式分數：${attempt.published_score}/${attempt.published_score_max ?? attempt.score_max ?? 100}` : ""}`, "response-attempt__meta");
+  if (attempt.eligible === false) appendText(article, "p", "⚠️ 此次回覆不符合採計時間／日期規則，未列入正式成績。", "response-attempt__warning");
+  const responses = Array.isArray(attempt.responses) ? attempt.responses : [];
+  if (!responses.length) {
+    appendText(article, "p", "此筆資料沒有可顯示的逐題回答欄位。", "empty-state");
+    container.append(article);
+    return;
+  }
+  const list = document.createElement("ol");
+  list.className = "response-question-list";
+  for (const response of responses) {
+    const item = document.createElement("li");
+    item.className = "response-question";
+    appendText(item, "strong", `${response.question}｜${response.prompt || "未標示題目"}`, "response-question__prompt");
+    appendText(item, "span", `學生回答：${responseText(response.response)}`, "response-question__answer");
+    const correctness = response.is_correct === true ? "正確" : response.is_correct === false ? "錯誤" : "未建答案鍵";
+    appendText(item, "span", correctness, `response-question__correctness response-question__correctness--${response.is_correct === true ? "correct" : response.is_correct === false ? "wrong" : "unknown"}`);
+    const answer = appendText(item, "span", response.correct_answer?.length ? `正確答案：${response.correct_answer.join("／")}` : "正確答案：目前未建檔", "response-question__key");
+    answer.hidden = !responseAnswersVisible;
+    list.append(item);
+  }
+  article.append(list);
+  container.append(article);
+}
+
+function renderResponseDialog() {
+  if (!responseDialogState) return;
+  const { title, summary, attempts, reviewItems } = responseDialogState;
+  el.responseDialogTitle.textContent = title;
+  el.responseDialogSummary.textContent = summary;
+  el.responseDialogAnswers.textContent = responseAnswersVisible ? "隱藏答案" : "一鍵顯示答案";
+  el.responseDialogReview.replaceChildren();
+  if (reviewItems.length) {
+    el.responseDialogReview.hidden = false;
+    appendText(el.responseDialogReview, "strong", `待處理原因（${reviewItems.length} 筆）`, "response-dialog__review-title");
+    for (const item of reviewItems) appendText(el.responseDialogReview, "span", formatReviewReason(item), "response-dialog__review-item");
+  } else {
+    el.responseDialogReview.hidden = true;
+  }
+  el.responseDialogAttempts.replaceChildren();
+  attempts.forEach((attempt, index) => renderResponseAttempt(el.responseDialogAttempts, attempt, index));
+}
+
+function openResponseDialog(title, summary, attempts, reviewItems = []) {
+  responseDialogState = { title, summary, attempts, reviewItems };
+  responseAnswersVisible = false;
+  renderResponseDialog();
+  if (typeof el.responseDialog.showModal === "function") el.responseDialog.showModal();
+  else el.responseDialog.setAttribute("open", "true");
+}
+
+function openReviewResponse(submission) {
+  openResponseDialog(
+    `${submission.episode ?? "未標示 EP"} 原始填答`,
+    `表單：${submission.form_key ?? "—"}｜送出：${formatSubmittedAt(getSubmissionDisplayTime(submission)) || "—"}`,
+    [{ ...submission, eligible: !isTemporalMismatch(submission), responses: submission.responses ?? [] }],
+    [submission]
+  );
+}
+
+function handleResponseLookupClick(event) {
+  const reviewButton = event.target.closest("[data-review-response-key]");
+  if (reviewButton) {
+    const submission = findReviewSubmission(reviewButton.dataset.reviewResponseKey);
+    if (submission) openReviewResponse(submission);
+    return;
+  }
+  const scoreButton = event.target.closest("[data-response-key]");
+  if (!scoreButton) return;
+  const [episode, className, seat] = scoreButton.dataset.responseKey.split("|");
+  const student = data.students.find((candidate) => candidate.class === className && normalizeSeatInput(candidate.seat) === seat);
+  if (!student) return;
+  const entry = student.scores?.[episode];
+  const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
+  if (!attempts.length) return;
+  openResponseDialog(
+    `${student.class} 班 ${student.seat} 號｜${student.name}｜${episode}`,
+    `共 ${attempts.length} 次填寫；正式成績依目前選取規則顯示。`,
+    attempts,
+    getReviewItemsForStudent(student, episode)
+  );
+}
+
+function scoreCell(entry, context = {}) {
   const cell = document.createElement("td");
   const status = getEntryStatus(entry);
   const className = status === "published" ? "score-pill--published" : status === "pending_review" ? "score-pill--pending" : "score-pill--missing";
   const result = status === "published" ? getPublishedResult(entry) : null;
   const text = status === "published" ? `${result?.score ?? "—"}` : status === "pending_review" ? "待確認" : "—";
-  const pill = appendText(cell, "span", text, `score-pill ${className}`);
+  const reviewItems = context.student ? getReviewItemsForStudent(context.student, context.episode) : [];
+  const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [];
+  const target = attempts.length ? document.createElement("button") : cell;
+  if (target !== cell) {
+    target.type = "button";
+    target.className = "score-cell__button";
+    target.dataset.responseKey = [context.episode, context.student.class, normalizeSeatInput(context.student.seat)].join("|");
+    const reviewState = getReviewState(reviewItems);
+    if (reviewState === "pending") target.classList.add("score-cell__button--review");
+    if (reviewState === "confirmed") target.classList.add("score-cell__button--resolved");
+    target.title = reviewState === "pending" ? "此 EP 有待處理資料；點擊查看原因與原始填答" : "點擊查看原始填答";
+    cell.append(target);
+  }
+  const pill = appendText(target, "span", text, `score-pill ${className}`);
   if (status === "pending_review") pill.title = "此 EP 有多次回覆，尚待確認正式分數";
   if (status === "no_response") pill.title = "目前沒有回覆資料";
   if (result?.submittedAt) {
-    const time = appendText(cell, "time", formatSubmittedAt(result.submittedAt), "score-time");
+    const time = appendText(target, "time", formatSubmittedAt(result.submittedAt), "score-time");
     time.title = "正式選取回覆送出時間";
   }
+  if (reviewItems.length) appendText(target, "span", getReviewState(reviewItems) === "confirmed" ? "已處理" : `⚠ ${reviewItems.length} 筆待處理`, "score-review-label");
   return cell;
 }
 
@@ -764,7 +935,7 @@ function renderRows(className, episodes) {
     const row = document.createElement("tr");
     appendText(row, "td", student.seat);
     appendText(row, "td", student.name, "student-name");
-    for (const episode of episodes) row.append(scoreCell(student.scores[episode.id]));
+    for (const episode of episodes) row.append(scoreCell(student.scores[episode.id], { student, episode: episode.id }));
     el.scoreBody.append(row);
   }
 }
@@ -779,7 +950,7 @@ function renderStudentResults(student) {
   for (const episode of data.episodes) {
     const row = document.createElement("tr");
     appendText(row, "td", episode.label);
-    row.append(scoreCell(student.scores?.[episode.id]));
+    row.append(scoreCell(student.scores?.[episode.id], { student, episode: episode.id }));
     el.studentBody.append(row);
   }
 }
@@ -837,6 +1008,7 @@ function renderIssues() {
 
 function selectClass(className) {
   currentClassName = className;
+  updateEpisodeViewControls(currentClassName);
   renderClassView();
   el.panel.hidden = false;
 }
@@ -878,6 +1050,8 @@ async function activate(password, restored = false) {
   button.disabled = true;
   try {
     data = await decryptPayload(password);
+    rebuildReviewIndex();
+    loadReviewDecisionStore();
     if (!restored) saveSessionPassword(password);
     el.passwordInput.value = "";
     el.gate.hidden = true;
@@ -922,10 +1096,21 @@ el.classForm.addEventListener("submit", lookupClass);
 el.studentForm.addEventListener("submit", lookupStudent);
 el.episodeViewRecent.addEventListener("click", () => setEpisodeView("recent"));
 el.episodeViewAll.addEventListener("click", () => setEpisodeView("all"));
+el.scoreBody.addEventListener("click", handleResponseLookupClick);
+el.studentBody.addEventListener("click", handleResponseLookupClick);
 el.reviewCards.addEventListener("submit", handleReviewDecisionSubmit);
 el.reviewCards.addEventListener("change", handleReviewCardChange);
+el.reviewCards.addEventListener("click", handleResponseLookupClick);
 el.reviewCopyJson.addEventListener("click", () => void copyReviewDecisions());
 el.reviewDownloadJson.addEventListener("click", downloadReviewDecisions);
+el.responseDialogClose.addEventListener("click", () => el.responseDialog.close());
+el.responseDialogAnswers.addEventListener("click", () => {
+  responseAnswersVisible = !responseAnswersVisible;
+  renderResponseDialog();
+});
+el.responseDialog.addEventListener("click", (event) => {
+  if (event.target === el.responseDialog) el.responseDialog.close();
+});
 
 const savedSessionPassword = readSessionPassword();
 if (savedSessionPassword) void activate(savedSessionPassword, true);
