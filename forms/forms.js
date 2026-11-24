@@ -11,6 +11,7 @@ const episodeButtons = document.querySelector("#episode-buttons");
 const episodeDetail = document.querySelector("#episode-detail");
 const episodeTitle = document.querySelector("#episode-title");
 const episodeSummary = document.querySelector("#episode-summary");
+const episodeQrControls = document.querySelector("#episode-qr-controls");
 const episodeForms = document.querySelector("#episode-forms");
 const videoFrameWrap = document.querySelector("#video-frame-wrap");
 const videoCaption = document.querySelector("#video-caption");
@@ -25,6 +26,8 @@ let formManifest;
 let videos = [];
 let formsByEpisode = new Map();
 let currentEpisode = null;
+let qrVisible = false;
+let selectedPreviousOffsets = new Set();
 
 function readSessionPassword() {
   try {
@@ -152,9 +155,10 @@ function updateEpisodeButtonState() {
   }
 }
 
-function renderForm(form) {
+function renderForm(form, episodeLabel, includeQr) {
   const card = document.createElement("article");
   card.className = "form-card";
+  card.dataset.episode = episodeLabel;
   addText(card, "h3", `${form.form_key ?? form.label ?? "課堂表單"}｜${form.display_name ?? "學生填寫表單"}`, "form-card-title");
 
   const actions = document.createElement("div");
@@ -178,12 +182,12 @@ function renderForm(form) {
     addText(card, "p", "此表單沒有可顯示的 QR code。", "error");
     return card;
   }
+  if (!includeQr) return card;
 
   const qr = document.createElement("img");
   qr.className = "form-card-qr";
   qr.src = `../${qrPath}`;
   qr.alt = `${form.form_key ?? form.label ?? "課堂表單"} 填寫表單 QR code`;
-  qr.loading = "eager";
   card.append(qr);
 
   const sizes = document.createElement("div");
@@ -195,7 +199,6 @@ function renderForm(form) {
     button.textContent = `${size}px`;
     button.addEventListener("click", () => {
       qr.style.width = `${size}px`;
-      qr.style.height = `${size}px`;
     });
     sizes.append(button);
   }
@@ -215,8 +218,9 @@ function renderVideo(video, label) {
   const iframe = document.createElement("iframe");
   iframe.src = video.embedUrl;
   iframe.title = `${video.label}｜${video.title}`;
-  iframe.allow = "autoplay; fullscreen";
+  iframe.allow = "autoplay; fullscreen; picture-in-picture";
   iframe.allowFullscreen = true;
+  iframe.setAttribute("webkitallowfullscreen", "");
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   videoFrameWrap.append(iframe);
   videoFrameWrap.hidden = false;
@@ -240,15 +244,90 @@ function renderEpisodeButtons(episodes) {
   }
 }
 
+function previousEpisodeLabel(label, offset) {
+  const episode = episodeNumber(label) - offset;
+  return episode > 0 ? `EP${String(episode).padStart(2, "0")}` : null;
+}
+
+function renderEpisodeQrControls(label) {
+  episodeQrControls.replaceChildren();
+
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "qr-visibility-toggle";
+  toggle.setAttribute("aria-controls", "episode-forms");
+  toggle.addEventListener("click", () => {
+    qrVisible = !qrVisible;
+    toggle.textContent = qrVisible ? "隱藏 QR code" : "顯示 QR code";
+    toggle.setAttribute("aria-expanded", String(qrVisible));
+    renderEpisodeForms();
+  });
+  episodeQrControls.append(toggle);
+
+  const previousEpisodes = document.createElement("fieldset");
+  previousEpisodes.className = "qr-previous-episodes";
+  addText(previousEpisodes, "legend", "同時顯示前幾集表單", "qr-previous-legend");
+  for (const offset of [1, 2]) {
+    const previousLabel = previousEpisodeLabel(label, offset);
+    const available = previousLabel !== null && formsByEpisode.has(previousLabel);
+    const option = document.createElement("label");
+    option.className = available ? "qr-previous-option" : "qr-previous-option unavailable";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.disabled = !available;
+    checkbox.checked = available && selectedPreviousOffsets.has(offset);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selectedPreviousOffsets.add(offset);
+      else selectedPreviousOffsets.delete(offset);
+      renderEpisodeForms();
+    });
+    option.append(checkbox);
+
+    const description = previousLabel
+      ? `${previousLabel}（前 ${offset} 集）${available ? "" : "，無表單"}`
+      : `前 ${offset} 集（已到 EP01）`;
+    addText(option, "span", description);
+    previousEpisodes.append(option);
+  }
+  episodeQrControls.append(previousEpisodes);
+  addText(episodeQrControls, "p", "QR code 預設隱藏；點選顯示後才載入圖片。", "qr-help");
+
+  toggle.textContent = qrVisible ? "隱藏 QR code" : "顯示 QR code";
+  toggle.setAttribute("aria-expanded", String(qrVisible));
+}
+
+function renderEpisodeForms() {
+  episodeForms.replaceChildren();
+  if (!currentEpisode) return;
+
+  const selectedEpisodes = [currentEpisode];
+  for (const offset of [1, 2]) {
+    if (!selectedPreviousOffsets.has(offset)) continue;
+    const label = previousEpisodeLabel(currentEpisode, offset);
+    if (label && formsByEpisode.has(label)) selectedEpisodes.push(label);
+  }
+
+  const forms = selectedEpisodes.flatMap((label) =>
+    (formsByEpisode.get(label) ?? []).map((form) => ({ label, form }))
+  );
+  if (!forms.length) {
+    addText(episodeForms, "p", "此 EP 尚無表單。", "data-status");
+    return;
+  }
+  for (const { label, form } of forms) episodeForms.append(renderForm(form, label, qrVisible));
+}
+
 function selectEpisode(label) {
   const forms = formsByEpisode.get(label) ?? [];
   const video = videos.find((candidate) => candidate.label === label);
   currentEpisode = label;
+  selectedPreviousOffsets.clear();
   updateEpisodeButtonState();
   episodeTitle.textContent = `${label}｜${getEpisodeTitle(label, video, forms)}`;
   episodeSummary.textContent = `${forms.length} 份表單；${video ? "對應影片已載入" : "目前沒有對應影片"}`;
-  episodeForms.replaceChildren();
-  for (const form of forms) episodeForms.append(renderForm(form));
+  renderEpisodeQrControls(label);
+  renderEpisodeForms();
   renderVideo(video, label);
   episodeDetail.hidden = false;
   episodeDetail.scrollIntoView({ behavior: "smooth", block: "start" });
