@@ -232,6 +232,8 @@ main { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3r
 .class-tab[aria-selected="true"] .class-tab__meta { color: var(--ink); }
 
 .class-panel__head { align-items: flex-start; margin-bottom: 1rem; }
+.next-class-video:not([hidden]) { display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: .45rem; padding: .4rem .75rem; border-radius: .55rem; background: #146961; color: white; font-weight: 800; }
+.next-class-video:focus-visible { outline: 3px solid #102333; outline-offset: 3px; }
 .class-summary { display: grid; grid-template-columns: repeat(3, minmax(8rem, 1fr)); gap: .55rem; width: min(100%, 42rem); margin: 0; color: var(--muted); text-align: left; }
 .class-summary__item { display: flex; min-height: 3.7rem; flex-direction: column; justify-content: center; padding: .45rem .65rem; border: 1px solid var(--line); border-radius: .65rem; background: #fbfcfb; font-size: .82rem; line-height: 1.35; }
 .class-summary__item strong { color: var(--ink); font-size: .95rem; }

@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title>技高化學｜課堂表單與影片</title>
-    <link rel="stylesheet" href="forms.css?v=20261124-qr-ipad-2">
+    <link rel="stylesheet" href="forms.css?v=20261128-classroom-1">
   </head>
   <body>
     <main>
       <p class="eyebrow">115 學年度上學期 · 技高化學</p>
       <h1>課堂表單與影片</h1>
-      <p class="intro">輸入課堂密碼後點選目前播放的 EP；影片會立即切換，QR code 預設隱藏，也可選擇同時顯示前兩集的表單。</p>
+      <p class="intro">選擇集數後，可一邊播放影片，一邊投影這集和前一集的答題 QR code。</p>
       <section id="access-gate" class="access-gate" aria-labelledby="gate-title">
         <p class="section-kicker">ACCESS</p>
         <h2 id="gate-title">輸入密碼查看課堂內容</h2>
@@ -45,23 +45,19 @@
           </div>
           <p id="episode-summary" class="data-status">—</p>
         </div>
+        <div id="episode-qr-controls" class="episode-qr-controls" role="group" aria-label="課堂顯示模式"></div>
         <div class="episode-layout">
-          <div class="episode-forms-column">
-            <h3>Google 表單 QR code</h3>
-            <div id="episode-qr-controls" class="episode-qr-controls" aria-label="QR code 顯示控制"></div>
-            <div id="episode-forms" class="episode-forms"></div>
-          </div>
           <div class="episode-video-column">
-            <h3>EP 影片</h3>
             <div id="video-frame-wrap" class="video-frame-wrap" hidden></div>
             <p id="video-caption" class="video-caption">—</p>
             <a id="video-open-link" class="video-link" href="#" target="_blank" rel="noopener" hidden>在 Google Drive 開啟原始影片</a>
           </div>
+          <div id="episode-forms" class="episode-forms"></div>
         </div>
       </section>
 
       <p><a href="../">返回成績顯示頁面</a></p>
     </main>
-    <script type="module" src="forms.js?v=20261124-qr-ipad-2"></script>
+    <script type="module" src="forms.js?v=20261128-classroom-1"></script>
   </body>
 </html>

@@ -242,6 +242,20 @@ function renderClassView() {
   if (!currentClassName) return;
   const episodes = getVisibleEpisodes(currentClassName);
   el.classTitle.textContent = `${currentClassName} 班`;
+  const nextLink = document.querySelector("#next-class-video");
+  const latest = data.episodes.reduce((highest, episode) => {
+    const match = /^EP(\d{2})$/u.exec(episode.label);
+    return match && getCounts(currentClassName, episode.id).published
+      ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  nextLink.hidden = latest >= 54;
+  if (latest < 54) {
+    const label = `EP${String(latest + 1).padStart(2, "0")}`;
+    nextLink.href = `forms/?ep=${label}`;
+    nextLink.textContent = `觀看下一集 ${label}`;
+  } else {
+    nextLink.removeAttribute("href");
+  }
   renderClassSummary(currentClassName, episodes);
   el.tableCaption.textContent = `${currentClassName} 班｜${formatEpisodeRange(episodes)} 成績`;
   renderScoreHead(episodes);
@@ -584,7 +598,7 @@ function renderReviewDecisionCards(submissions, formLabels) {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = text;
-        verdictLabel.append(option);
+        verdict.append(option);
       }
       verdict.value = decision?.verdict ?? "";
       verdictLabel.append(verdict);
@@ -650,7 +664,9 @@ function handleReviewDecisionSubmit(event) {
     setReviewFeedback("找不到這筆原始回覆，請重新載入頁面。", "error");
     return;
   }
-  const fields = validateReviewDecision(form);
+  const fields = isTemporalMismatch(submission) && form.elements.verdict.value === "confirmed"
+    ? { ok: false, message: "時間／日期異常的回覆不予採計。" }
+    : validateReviewDecision(form);
   if (!fields.ok) {
     setReviewFeedback(fields.message, "error");
     form.querySelector("[data-review-status]").textContent = fields.message;

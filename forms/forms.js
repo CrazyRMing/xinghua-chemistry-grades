@@ -5,6 +5,7 @@ const SESSION_KEY = "xinghua-chemistry-session-v1";
 const SESSION_TTL_MS = 60 * 60 * 1000;
 const params = new URLSearchParams(location.search);
 const requestedFormKey = params.get("key");
+const requestedEpisode = params.get("ep");
 
 const episodePicker = document.querySelector("#episode-picker");
 const episodeButtons = document.querySelector("#episode-buttons");
@@ -26,8 +27,8 @@ let formManifest;
 let videos = [];
 let formsByEpisode = new Map();
 let currentEpisode = null;
-let qrVisible = false;
-let selectedPreviousOffsets = new Set();
+let displayMode = "video";
+let previousFormIndex = 0;
 
 function readSessionPassword() {
   try {
@@ -159,7 +160,7 @@ function renderForm(form, episodeLabel, includeQr) {
   const card = document.createElement("article");
   card.className = "form-card";
   card.dataset.episode = episodeLabel;
-  addText(card, "h3", `${form.form_key ?? form.label ?? "課堂表單"}｜${form.display_name ?? "學生填寫表單"}`, "form-card-title");
+  addText(card, "h3", form.form_key ?? episodeLabel, "form-card-title");
 
   const actions = document.createElement("div");
   actions.className = "form-card-actions";
@@ -170,7 +171,8 @@ function renderForm(form, episodeLabel, includeQr) {
     open.href = link;
     open.target = "_blank";
     open.rel = "noopener noreferrer";
-    open.textContent = "開啟填寫表單";
+    open.textContent = "開啟表單";
+    open.setAttribute("aria-label", `開啟 ${form.form_key ?? episodeLabel} 表單`);
     actions.append(open);
   } else {
     addText(card, "p", "此表單入口無效。", "error");
@@ -190,19 +192,6 @@ function renderForm(form, episodeLabel, includeQr) {
   qr.alt = `${form.form_key ?? form.label ?? "課堂表單"} 填寫表單 QR code`;
   card.append(qr);
 
-  const sizes = document.createElement("div");
-  sizes.className = "qr-sizes";
-  addText(sizes, "span", "QR 大小：", "qr-size-label");
-  for (const size of [240, 360, 480]) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = `${size}px`;
-    button.addEventListener("click", () => {
-      qr.style.width = `${size}px`;
-    });
-    sizes.append(button);
-  }
-  card.append(sizes);
   return card;
 }
 
@@ -251,78 +240,62 @@ function previousEpisodeLabel(label, offset) {
 
 function renderEpisodeQrControls(label) {
   episodeQrControls.replaceChildren();
-
-  const toggle = document.createElement("button");
-  toggle.type = "button";
-  toggle.className = "qr-visibility-toggle";
-  toggle.setAttribute("aria-controls", "episode-forms");
-  toggle.addEventListener("click", () => {
-    qrVisible = !qrVisible;
-    toggle.textContent = qrVisible ? "隱藏 QR code" : "顯示 QR code";
-    toggle.setAttribute("aria-expanded", String(qrVisible));
-    renderEpisodeForms();
-  });
-  episodeQrControls.append(toggle);
-
-  const previousEpisodes = document.createElement("fieldset");
-  previousEpisodes.className = "qr-previous-episodes";
-  addText(previousEpisodes, "legend", "同時顯示前幾集表單", "qr-previous-legend");
-  for (const offset of [1, 2]) {
-    const previousLabel = previousEpisodeLabel(label, offset);
-    const available = previousLabel !== null && formsByEpisode.has(previousLabel);
-    const option = document.createElement("label");
-    option.className = available ? "qr-previous-option" : "qr-previous-option unavailable";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.disabled = !available;
-    checkbox.checked = available && selectedPreviousOffsets.has(offset);
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) selectedPreviousOffsets.add(offset);
-      else selectedPreviousOffsets.delete(offset);
+  for (const [mode, title] of [
+    ["video", "只看影片"],
+    ["both", "影片＋QR code"],
+    ["qr", "只看 QR code"],
+  ]) {
+    const button = addText(episodeQrControls, "button", title, "qr-visibility-toggle");
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(displayMode === mode));
+    button.addEventListener("click", () => {
+      displayMode = mode;
+      for (const sibling of episodeQrControls.querySelectorAll("button")) {
+        sibling.setAttribute("aria-pressed", String(sibling === button));
+      }
       renderEpisodeForms();
     });
-    option.append(checkbox);
-
-    const description = previousLabel
-      ? `${previousLabel}（前 ${offset} 集）${available ? "" : "，無表單"}`
-      : `前 ${offset} 集（已到 EP01）`;
-    addText(option, "span", description);
-    previousEpisodes.append(option);
   }
-  episodeQrControls.append(previousEpisodes);
-  addText(episodeQrControls, "p", "QR code 預設隱藏；點選顯示後才載入圖片。", "qr-help");
-
-  toggle.textContent = qrVisible ? "隱藏 QR code" : "顯示 QR code";
-  toggle.setAttribute("aria-expanded", String(qrVisible));
+  const previous = formsByEpisode.get(previousEpisodeLabel(label, 1)) ?? [];
+  if (previous.length > 1) {
+    const field = addText(episodeQrControls, "label", "前一集表單 ", "qr-variant");
+    const select = document.createElement("select");
+    previous.forEach((form, index) => select.add(new Option(form.form_key, index)));
+    select.value = String(previousFormIndex);
+    select.addEventListener("change", () => {
+      previousFormIndex = Number(select.value);
+      renderEpisodeForms();
+    });
+    field.append(select);
+  }
 }
 
 function renderEpisodeForms() {
   episodeForms.replaceChildren();
   if (!currentEpisode) return;
+  episodeDetail.dataset.mode = displayMode;
 
-  const selectedEpisodes = [currentEpisode];
-  for (const offset of [1, 2]) {
-    if (!selectedPreviousOffsets.has(offset)) continue;
-    const label = previousEpisodeLabel(currentEpisode, offset);
-    if (label && formsByEpisode.has(label)) selectedEpisodes.push(label);
-  }
-
-  const forms = selectedEpisodes.flatMap((label) =>
-    (formsByEpisode.get(label) ?? []).map((form) => ({ label, form }))
-  );
+  const current = (formsByEpisode.get(currentEpisode) ?? []).map((form) => ({ label: currentEpisode, form }));
+  const previousLabel = previousEpisodeLabel(currentEpisode, 1);
+  const previous = (formsByEpisode.get(previousLabel) ?? []).map((form) => ({ label: previousLabel, form }));
+  const older = previousEpisodeLabel(currentEpisode, 2);
+  const olderForms = (formsByEpisode.get(older) ?? []).map((form) => ({ label: older, form }));
+  const forms = displayMode === "both"
+    ? [...current, ...previous.slice(previousFormIndex, previousFormIndex + 1)].slice(0, 2)
+    : displayMode === "qr" ? [...current, ...previous, ...olderForms].slice(0, 3) : current;
   if (!forms.length) {
     addText(episodeForms, "p", "此 EP 尚無表單。", "data-status");
     return;
   }
-  for (const { label, form } of forms) episodeForms.append(renderForm(form, label, qrVisible));
+  for (const { label, form } of forms) episodeForms.append(renderForm(form, label, displayMode !== "video"));
 }
 
 function selectEpisode(label) {
   const forms = formsByEpisode.get(label) ?? [];
   const video = videos.find((candidate) => candidate.label === label);
   currentEpisode = label;
-  selectedPreviousOffsets.clear();
+  previousFormIndex = 0;
+  if (displayMode === "qr") displayMode = "video";
   updateEpisodeButtonState();
   episodeTitle.textContent = `${label}｜${getEpisodeTitle(label, video, forms)}`;
   episodeSummary.textContent = `${forms.length} 份表單；${video ? "對應影片已載入" : "目前沒有對應影片"}`;
@@ -369,6 +342,7 @@ async function activate(password, restored = false) {
     status.textContent = `${episodes.length} 個 EP、${formManifest.forms.length} 份表單、${videos.length} 支影片；請點選對應 EP。`;
     episodePicker.hidden = false;
     episodeDetail.hidden = true;
+    if (requestedEpisode && videos.some((video) => video.label === requestedEpisode)) selectEpisode(requestedEpisode);
   } catch {
     if (restored) clearSessionPassword();
     gateStatus.textContent = restored ? "登入狀態已失效，請重新輸入密碼。" : "密碼不正確或資料無法解密。";
